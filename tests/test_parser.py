@@ -114,6 +114,8 @@ TEST_CASES = [
       """[sub_resource type="CustomType" id=1]
       string_value = "String"
       string_name_value = &"StringName"
+      string_quote = "\\"String\\""
+      string_name_quote = &"\\"StringName\\""
       """  ,
 GDFile(
             GDSection(
@@ -121,6 +123,8 @@ GDFile(
                 **{
                     "string_value": "String",
                     "string_name_value": StringName("StringName"),
+                    "string_quote": "\"String\"",
+                    "string_name_quote": StringName("\"StringName\""),
                 }
             )
         ),

@@ -2,10 +2,13 @@
 import argparse
 import os
 import sys
+import re
 from itertools import zip_longest
 
 from godot_parser import load, parse
 
+# Regex to detect all whitespaces not between quotes
+line_normalizer_re = re.compile('\s+(?=((\\[\\"]|[^\\"])*"(\\[\\"]|[^\\"])*")*(\\[\\"]|[^\\"])*$)')
 
 def _parse_and_test_file(filename: str) -> bool:
     print("Parsing %s" % filename)
@@ -24,8 +27,8 @@ def _parse_and_test_file(filename: str) -> bool:
     with f.use_tree() as tree:
         pass
 
-    data_lines = [l for l in str(data).split("\n") if l]
-    content_lines = [l for l in contents.split("\n") if l]
+    data_lines = [line_normalizer_re.sub("",l) for l in str(data).split("\n") if l]
+    content_lines = [line_normalizer_re.sub("",l) for l in contents.split("\n") if l]
     if data_lines != content_lines:
         print("  Error!")
         max_len = max([len(l) for l in content_lines])

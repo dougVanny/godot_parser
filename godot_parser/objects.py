@@ -256,9 +256,7 @@ class StringName():
         return StringName(parse_result[0])
 
     def __str__(self) -> str:
-        return "&\"%s\"" % (
-            self.str,
-        )
+        return "&" + stringify_object(self.str)
 
     def __repr__(self) -> str:
         return self.__str__()
