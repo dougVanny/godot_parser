@@ -122,6 +122,7 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(repr(s), "&\"A \\\"Quoted test\\\"\"")
 
     def test_typed_dictionary(self):
+        """Test for TypedDictionary"""
         dict1 = {
             StringName("asd"): GDObject("ExtResource", "2_qwert")
         }

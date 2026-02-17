@@ -116,8 +116,10 @@ TEST_CASES = [
       string_name_value = &"StringName"
       string_quote = "\\"String\\""
       string_name_quote = &"\\"StringName\\""
+      string_single_quote = "\'String\'"
+      string_name_single_quote = &"\'StringName\'"
       """  ,
-GDFile(
+        GDFile(
             GDSection(
                 GDSectionHeader("sub_resource", type="CustomType", id=1),
                 **{
@@ -125,6 +127,8 @@ GDFile(
                     "string_name_value": StringName("StringName"),
                     "string_quote": "\"String\"",
                     "string_name_quote": StringName("\"StringName\""),
+                    "string_single_quote": "'String'",
+                    "string_name_single_quote": StringName("'StringName'"),
                 }
             )
         ),
@@ -138,7 +142,7 @@ GDFile(
       ExtResource("2_testt"): &"key"
       })
       """  ,
-GDFile(
+        GDFile(
             GDSection(
                 GDSectionHeader("sub_resource", type="CustomType", id=1),
                 **{
@@ -150,6 +154,19 @@ GDFile(
                     {
                         GDObject("ExtResource", "2_testt"): StringName("key")
                     })
+                }
+            )
+        ),
+    ),
+    (
+      """[node name="Label" type="Label" parent="." unique_id=1387035530]
+      text = "\ta\\\"q\\'é'd\\\"\n"
+      """,
+        GDFile(
+            GDSection(
+                GDSectionHeader("node", name="Label", type="Label", parent=".", unique_id=1387035530),
+                **{
+                    "text": "\ta\"q'é'd\"\n"
                 }
             )
         ),
