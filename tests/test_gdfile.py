@@ -29,7 +29,7 @@ class TestGDFile(unittest.TestCase):
 [resource]
 list = [ 1, 2.0, "string" ]
 map = {
-"key": [ "nested", Vector2( 1, 1 ) ]
+"key": [ "nested", Vector2(1, 1) ]
 }
 empty = null
 escaped = "foo(\\"bar\\")"

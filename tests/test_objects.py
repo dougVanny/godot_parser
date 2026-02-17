@@ -1,6 +1,6 @@
 import unittest
 
-from godot_parser import Color, ExtResource, NodePath, SubResource, Vector2, Vector3
+from godot_parser import Color, ExtResource, NodePath, SubResource, Vector2, Vector3, StringName
 
 
 class TestGDObjects(unittest.TestCase):
@@ -13,7 +13,7 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(v[1], 2)
         self.assertEqual(v.x, 1)
         self.assertEqual(v.y, 2)
-        self.assertEqual(str(v), "Vector2( 1, 2 )")
+        self.assertEqual(str(v), "Vector2(1, 2)")
         v.x = 2
         v.y = 3
         self.assertEqual(v.x, 2)
@@ -32,7 +32,7 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(v.x, 1)
         self.assertEqual(v.y, 2)
         self.assertEqual(v.z, 3)
-        self.assertEqual(str(v), "Vector3( 1, 2, 3 )")
+        self.assertEqual(str(v), "Vector3(1, 2, 3)")
         v.x = 2
         v.y = 3
         v.z = 4
@@ -57,7 +57,7 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(c.g, 0.2)
         self.assertEqual(c.b, 0.3)
         self.assertEqual(c.a, 0.4)
-        self.assertEqual(str(c), "Color( 0.1, 0.2, 0.3, 0.4 )")
+        self.assertEqual(str(c), "Color(0.1, 0.2, 0.3, 0.4)")
         c.r = 0.2
         c.g = 0.3
         c.b = 0.4
@@ -89,7 +89,7 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(r.id, 1)
         r.id = 2
         self.assertEqual(r.id, 2)
-        self.assertEqual(str(r), "ExtResource( 2 )")
+        self.assertEqual(str(r), "ExtResource(2)")
 
     def test_sub_resource(self):
         """Test for SubResource"""
@@ -97,14 +97,26 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(r.id, 1)
         r.id = 2
         self.assertEqual(r.id, 2)
-        self.assertEqual(str(r), "SubResource( 2 )")
+        self.assertEqual(str(r), "SubResource(2)")
 
     def test_dunder(self):
         """Test the __magic__ methods on GDObject"""
         v = Vector2(1, 2)
-        self.assertEqual(repr(v), "Vector2( 1, 2 )")
+        self.assertEqual(repr(v), "Vector2(1, 2)")
         v2 = Vector2(1, 2)
         self.assertEqual(v, v2)
         v2.x = 10
         self.assertNotEqual(v, v2)
         self.assertNotEqual(v, (1, 2))
+
+    def test_string_name(self):
+        """Test for StringName"""
+        s = StringName("test")
+        self.assertEqual(repr(s), "&\"test\"")
+        s2 = StringName("test")
+        self.assertEqual(s, s2)
+        s2.str = "bad"
+        self.assertNotEqual(s, s2)
+
+        s = StringName("A \"Quoted test\"")
+        self.assertEqual(repr(s), "&\"A \\\"Quoted test\\\"\"")
