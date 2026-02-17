@@ -1,6 +1,6 @@
 import unittest
 
-from godot_parser import Color, ExtResource, NodePath, SubResource, Vector2, Vector3, StringName
+from godot_parser import Color, ExtResource, NodePath, SubResource, Vector2, Vector3, StringName, GDObject, TypedDictionary
 
 
 class TestGDObjects(unittest.TestCase):
@@ -120,3 +120,12 @@ class TestGDObjects(unittest.TestCase):
 
         s = StringName("A \"Quoted test\"")
         self.assertEqual(repr(s), "&\"A \\\"Quoted test\\\"\"")
+
+    def test_typed_dictionary(self):
+        dict1 = {
+            StringName("asd"): GDObject("ExtResource", "2_qwert")
+        }
+        td = TypedDictionary("StringName", GDObject("ExtResource", "1_qwert"), dict1)
+        self.assertEqual(repr(td), """Dictionary[StringName, ExtResource("1_qwert")]({
+&"asd": ExtResource("2_qwert")
+})""")

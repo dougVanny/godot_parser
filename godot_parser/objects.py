@@ -14,6 +14,7 @@ __all__ = [
     "ExtResource",
     "SubResource",
     "StringName",
+    "TypedDictionary",
 ]
 
 GD_OBJECT_REGISTRY = {}
@@ -71,6 +72,9 @@ class GDObject(metaclass=GDObjectMeta):
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(frozenset((self.name,*self.args)))
 
 
 class Vector2(GDObject):
@@ -247,6 +251,49 @@ class SubResource(GDObject):
         """Setter for id"""
         self.args[0] = id
 
+
+class TypedDictionary():
+    def __init__(self, key_type, value_type, dict_) -> None:
+        self.name = "Dictionary"
+        self.key_type = key_type
+        self.value_type = value_type
+        self.dict_ = dict_
+
+    @classmethod
+    def WithCustomName(cls: Type[TypedDictionary], name, key_type, value_type, dict_) -> TypedDictionary:
+        custom_dict_ = TypedDictionary(key_type, value_type, dict_)
+        custom_dict_.name = name
+        return custom_dict_
+
+    @classmethod
+    def from_parser(cls: Type[TypedDictionary], parse_result) -> TypedDictionary:
+        return TypedDictionary.WithCustomName(*parse_result)
+
+    def __str__(self) -> str:
+        return "%s[%s, %s](%s)" % (
+            self.name,
+            self.key_type,
+            self.value_type,
+            stringify_object(self.dict_)
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, TypedDictionary):
+            return False
+        return self.name == other.name and \
+            self.key_type == other.key_type and \
+            self.value_type == other.value_type and \
+            self.dict_ == other.dict_
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(frozenset((self.name,self.key_type,self.value_type,self.dict_)))
+
 class StringName():
     def __init__(self, str) -> None:
         self.str = str
@@ -268,3 +315,6 @@ class StringName():
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.str)

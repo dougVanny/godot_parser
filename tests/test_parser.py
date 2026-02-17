@@ -3,7 +3,7 @@ import unittest
 
 from pyparsing import ParseException
 
-from godot_parser import GDFile, GDObject, GDSection, GDSectionHeader, Vector2, StringName, parse
+from godot_parser import GDFile, GDObject, GDSection, GDSectionHeader, Vector2, StringName, parse, TypedDictionary
 
 HERE = os.path.dirname(__file__)
 
@@ -125,6 +125,31 @@ GDFile(
                     "string_name_value": StringName("StringName"),
                     "string_quote": "\"String\"",
                     "string_name_quote": StringName("\"StringName\""),
+                }
+            )
+        ),
+    ),
+    (
+      """[sub_resource type="CustomType" id=1]
+      typed_dict_1 = Dictionary[StringName, ExtResource("1_testt")]({
+      &"key": ExtResource("2_testt")
+      })
+      typed_dict_2 = Dictionary[ExtResource("1_testt"), StringName]({
+      ExtResource("2_testt"): &"key"
+      })
+      """  ,
+GDFile(
+            GDSection(
+                GDSectionHeader("sub_resource", type="CustomType", id=1),
+                **{
+                    "typed_dict_1": TypedDictionary("StringName", GDObject("ExtResource", "1_testt"),
+                    {
+                        StringName("key"): GDObject("ExtResource", "2_testt")
+                    }),
+                    "typed_dict_2": TypedDictionary(GDObject("ExtResource", "1_testt"), "StringName",
+                    {
+                        GDObject("ExtResource", "2_testt"): StringName("key")
+                    })
                 }
             )
         ),

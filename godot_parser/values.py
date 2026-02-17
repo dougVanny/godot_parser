@@ -14,7 +14,7 @@ from pyparsing import (
     common,
 )
 
-from .objects import GDObject, StringName
+from .objects import GDObject, StringName, TypedDictionary
 
 boolean = (
     (Keyword("true") | Keyword("false"))
@@ -36,12 +36,14 @@ primitive = (
 value = Forward()
 
 # Vector2( 1, 2 )
-obj_type = (
+obj_ = (
     Word(alphas, alphanums).set_results_name("object_name")
     + Suppress("(")
-    + DelimitedList(value)
+    + Opt(DelimitedList(value))
     + Suppress(")")
 ).set_parse_action(GDObject.from_parser)
+
+obj_type = obj_ | Word(alphas, alphanums)
 
 # [ 1, 2 ] or [ 1, 2, ]
 list_ = (
@@ -51,7 +53,7 @@ list_ = (
     .set_name("list")
     .set_parse_action(lambda p: p.as_list())
 )
-key_val = Group(QuotedString('"', escChar="\\") + Suppress(":") + value)
+key_val = Group(value + Suppress(":") + value)
 
 # {
 # "_edit_use_anchors_": false
@@ -62,6 +64,17 @@ dict_ = (
     .set_parse_action(lambda d: {k: v for k, v in d})
 )
 
+typed_dict = (
+    Word(alphas, alphanums).set_results_name("object_name") +
+    (
+        Suppress("[")
+        + obj_type.set_results_name("key_type")
+        + Suppress(",")
+        + obj_type.set_results_name("value_type")
+        + Suppress("]")
+    ) + Suppress("(") + dict_ + Suppress(")")
+).set_parse_action(TypedDictionary.from_parser)
+
 # Exports
 
-value <<= primitive | list_ | dict_ | obj_type
+value <<= list_ | dict_ | typed_dict | obj_ | primitive
