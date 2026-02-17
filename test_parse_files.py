@@ -8,7 +8,7 @@ from itertools import zip_longest
 from godot_parser import load, parse
 
 # Regex to detect all whitespaces not between quotes
-line_normalizer_re = re.compile('\s+(?=((\\[\\"]|[^\\"])*"(\\[\\"]|[^\\"])*")*(\\[\\"]|[^\\"])*$)')
+line_normalizer_re = re.compile('\\s+(?=((\\[\\"]|[^\\"])*"(\\[\\"]|[^\\"])*")*(\\[\\"]|[^\\"])*$)')
 
 def _parse_and_test_file(filename: str) -> bool:
     print("Parsing %s" % filename)
