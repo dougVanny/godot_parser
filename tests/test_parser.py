@@ -3,7 +3,7 @@ import unittest
 
 from pyparsing import ParseException
 
-from godot_parser import GDFile, GDObject, GDSection, GDSectionHeader, Vector2, parse
+from godot_parser import GDFile, GDObject, GDSection, GDSectionHeader, Vector2, StringName, parse
 
 HERE = os.path.dirname(__file__)
 
@@ -106,6 +106,21 @@ TEST_CASES = [
                     "0:0/0": 0,
                     "0:0/0/physics_layer_0/linear_velocity": Vector2(0, 0),
                     "0:0/0/physics_layer_0/angular_velocity": 0.0,
+                }
+            )
+        ),
+    ),
+    (
+      """[sub_resource type="CustomType" id=1]
+      string_value = "String"
+      string_name_value = &"StringName"
+      """  ,
+GDFile(
+            GDSection(
+                GDSectionHeader("sub_resource", type="CustomType", id=1),
+                **{
+                    "string_value": "String",
+                    "string_name_value": StringName("StringName"),
                 }
             )
         ),

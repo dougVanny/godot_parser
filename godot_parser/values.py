@@ -14,7 +14,7 @@ from pyparsing import (
     common,
 )
 
-from .objects import GDObject
+from .objects import GDObject, StringName
 
 boolean = (
     (Keyword("true") | Keyword("false"))
@@ -24,9 +24,14 @@ boolean = (
 
 null = Keyword("null").set_parse_action(lambda _: [None])
 
+_string = QuotedString('"', escChar="\\", multiline=True).set_name("string")
+
+_string_name = (
+    Suppress('&') + _string
+).set_name("string_name").set_parse_action(StringName.from_parser)
 
 primitive = (
-    null | QuotedString('"', escChar="\\", multiline=True) | boolean | common.number
+    null | _string | _string_name | boolean | common.number
 )
 value = Forward()
 

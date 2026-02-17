@@ -13,6 +13,7 @@ __all__ = [
     "NodePath",
     "ExtResource",
     "SubResource",
+    "StringName",
 ]
 
 GD_OBJECT_REGISTRY = {}
@@ -245,3 +246,27 @@ class SubResource(GDObject):
     def id(self, id: int) -> None:
         """Setter for id"""
         self.args[0] = id
+
+class StringName():
+    def __init__(self, str) -> None:
+        self.str = str
+
+    @classmethod
+    def from_parser(cls: Type[StringName], parse_result) -> StringName:
+        return StringName(parse_result[0])
+
+    def __str__(self) -> str:
+        return "&\"%s\"" % (
+            self.str,
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, StringName):
+            return False
+        return self.str == other.str
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
