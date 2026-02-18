@@ -14,6 +14,7 @@ __all__ = [
     "ExtResource",
     "SubResource",
     "StringName",
+    "TypedArray",
     "TypedDictionary",
 ]
 
@@ -252,6 +253,46 @@ class SubResource(GDObject):
         self.args[0] = id
 
 
+class TypedArray():
+    def __init__(self, type, list_) -> None:
+        self.name = "Array"
+        self.type = type
+        self.list_ = list_
+
+    @classmethod
+    def WithCustomName(cls: Type[TypedArray], name, type, list_) -> TypedArray:
+        custom_array = TypedArray(type, list_)
+        custom_array.name = name
+        return custom_array
+
+    @classmethod
+    def from_parser(cls: Type[TypedArray], parse_result) -> TypedArray:
+        return TypedArray.WithCustomName(*parse_result)
+
+    def __str__(self) -> str:
+        return "%s[%s](%s)" % (
+            self.name,
+            self.type,
+            stringify_object(self.list_)
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, TypedArray):
+            return False
+        return self.name == other.name and \
+            self.type == other.type and \
+            self.list_ == other.list_
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(frozenset((self.name,self.type,self.list_)))
+
+
 class TypedDictionary():
     def __init__(self, key_type, value_type, dict_) -> None:
         self.name = "Dictionary"
@@ -261,9 +302,9 @@ class TypedDictionary():
 
     @classmethod
     def WithCustomName(cls: Type[TypedDictionary], name, key_type, value_type, dict_) -> TypedDictionary:
-        custom_dict_ = TypedDictionary(key_type, value_type, dict_)
-        custom_dict_.name = name
-        return custom_dict_
+        custom_dict = TypedDictionary(key_type, value_type, dict_)
+        custom_dict.name = name
+        return custom_dict
 
     @classmethod
     def from_parser(cls: Type[TypedDictionary], parse_result) -> TypedDictionary:

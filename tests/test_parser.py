@@ -3,7 +3,7 @@ import unittest
 
 from pyparsing import ParseException
 
-from godot_parser import GDFile, GDObject, GDSection, GDSectionHeader, Vector2, StringName, parse, TypedDictionary
+from godot_parser import GDFile, GDObject, GDSection, GDSectionHeader, Vector2, StringName, parse, TypedDictionary, TypedArray
 
 HERE = os.path.dirname(__file__)
 
@@ -158,6 +158,30 @@ TEST_CASES = [
                     {
                         GDObject("ExtResource", "2_testt"): StringName("key")
                     })
+                }
+            )
+        ),
+    ),
+    (
+      """[sub_resource type="CustomType" id=1]
+      typed_array_1 = Array[StringName]([&"a", &"b", &"c"])
+      typed_array_2 = Array[ExtResource("1_typee")]([ExtResource("1_qwert"), ExtResource("2_testt")])
+      """  ,
+        GDFile(
+            GDSection(
+                GDSectionHeader("sub_resource", type="CustomType", id=1),
+                **{
+                    "typed_array_1": TypedArray("StringName",
+                    [
+                        StringName("a"),
+                        StringName("b"),
+                        StringName("c"),
+                    ]),
+                    "typed_array_2": TypedArray(GDObject("ExtResource", "1_typee"),
+                    [
+                        GDObject("ExtResource", "1_qwert"),
+                        GDObject("ExtResource", "2_testt"),
+                    ])
                 }
             )
         ),

@@ -1,6 +1,6 @@
 import unittest
 
-from godot_parser import Color, ExtResource, NodePath, SubResource, Vector2, Vector3, StringName, GDObject, TypedDictionary
+from godot_parser import Color, ExtResource, NodePath, SubResource, Vector2, Vector3, StringName, GDObject, TypedDictionary, TypedArray
 
 
 class TestGDObjects(unittest.TestCase):
@@ -130,3 +130,19 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(repr(td), """Dictionary[StringName, ExtResource("1_qwert")]({
 &"asd": ExtResource("2_qwert")
 })""")
+
+    def test_typed_array(self):
+        """Test for TypedArray"""
+        list1 = [
+            StringName("asd"),
+            StringName("dsa"),
+        ]
+        ta = TypedArray("StringName", list1)
+        self.assertEqual(repr(ta), """Array[StringName]([&"asd", &"dsa"])""")
+
+        list2 = [
+            GDObject("ExtResource", "1_qwert"),
+            GDObject("ExtResource", "2_testt")
+        ]
+        ta = TypedArray("StringName", list2)
+        self.assertEqual(repr(ta), """Array[StringName]([ExtResource("1_qwert"), ExtResource("2_testt")])""")

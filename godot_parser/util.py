@@ -23,7 +23,7 @@ def stringify_object(value):
             + "\n}"
         )
     elif isinstance(value, list):
-        return "[ " + ", ".join([stringify_object(v) for v in value]) + " ]"
+        return "[" + ", ".join([stringify_object(v) for v in value]) + "]"
     else:
         return str(value)
 

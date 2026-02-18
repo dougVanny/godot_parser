@@ -14,7 +14,7 @@ from pyparsing import (
     common,
 )
 
-from .objects import GDObject, StringName, TypedDictionary
+from .objects import GDObject, StringName, TypedDictionary, TypedArray
 
 boolean = (
     (Keyword("true") | Keyword("false"))
@@ -53,6 +53,17 @@ list_ = (
     .set_name("list")
     .set_parse_action(lambda p: p.as_list())
 )
+
+# Array[StringName]([&"a", &"b", &"c"])
+typed_list = (
+    Word(alphas, alphanums).set_results_name("object_name") +
+    (
+        Suppress("[")
+        + obj_type.set_results_name("type")
+        + Suppress("]")
+    ) + Suppress("(") + list_ + Suppress(")")
+).set_parse_action(TypedArray.from_parser)
+
 key_val = Group(value + Suppress(":") + value)
 
 # {
@@ -64,6 +75,9 @@ dict_ = (
     .set_parse_action(lambda d: {k: v for k, v in d})
 )
 
+# Dictionary[StringName,ExtResource("1_qwert")]({
+# &"_edit_use_anchors_": ExtResource("2_testt")
+# })
 typed_dict = (
     Word(alphas, alphanums).set_results_name("object_name") +
     (
@@ -77,4 +91,4 @@ typed_dict = (
 
 # Exports
 
-value <<= list_ | dict_ | typed_dict | obj_ | primitive
+value <<= list_ | typed_list | dict_ | typed_dict | obj_ | primitive
