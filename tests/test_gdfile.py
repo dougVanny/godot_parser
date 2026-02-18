@@ -242,3 +242,25 @@ visible = false
         resource = s1.find_section("resource")
         resource["key"] = "value"
         self.assertNotEqual(s1, s2)
+
+class Godot4Test(unittest.TestCase):
+    def test_string_special_characters(self):
+        """
+        Testing strings with multiple special characters. Currently matching Godot 4.6 behavior
+
+        Tab handling is done by calling parse_with_tabs before parse_string
+        For this reason, this test is being done at a GDFile level, where this method is called upon parsing
+        """
+        res = GDResource()
+        res.add_section(
+            GDResourceSection(
+                str_value="\ta\"q\'é'd\"\n\n\\",
+            )
+        )
+        self.assertEqual(str(res), """[gd_resource load_steps=1 format=2]
+
+[resource]
+str_value = "	a\\"q'é'd\\"
+
+\\\\"
+""")
