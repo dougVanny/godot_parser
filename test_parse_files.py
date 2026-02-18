@@ -16,7 +16,7 @@ line_normalizer_re = re.compile(r"(?<=\W) +| +(?=\W)")
 # Regex to detect quotes and possible escape sequences
 find_quote_re = re.compile(r"(\\*\")")
 
-def join_lines_within_quotes(input: list[str]):
+def join_lines_within_quotes(input: list[str], unescape: bool):
     buffer_list = []
     lines = []
     buffer = ""
@@ -46,6 +46,8 @@ def join_lines_within_quotes(input: list[str]):
                 if i%2 == 0:
                     buffer_list[i] = space_re.sub(" ", buffer_list[i])
                     buffer_list[i] = line_normalizer_re.sub("", buffer_list[i])
+                elif unescape:
+                    buffer_list[i] = buffer_list[i].encode('latin-1', 'backslashreplace').decode('unicode-escape')
             lines.append("".join(buffer_list) + "\n")
             buffer_list = []
             buffer = ""
@@ -57,12 +59,14 @@ def join_lines_within_quotes(input: list[str]):
             if i % 2 == 0:
                 buffer_list[i] = space_re.sub(" ", buffer_list[i])
                 buffer_list[i] = line_normalizer_re.sub("", buffer_list[i])
+            elif unescape:
+                buffer_list[i] = buffer_list[i].encode('latin-1', 'backslashreplace').decode('unicode-escape')
         lines.append("".join(buffer_list) + "\n")
 
     return lines
 
 
-def _parse_and_test_file(filename: str, verbose: bool) -> bool:
+def _parse_and_test_file(filename: str, verbose: bool, unescape: bool) -> bool:
     if verbose:
         print("Parsing %s" % filename)
     with open(filename, "r") as ifile:
@@ -74,8 +78,14 @@ def _parse_and_test_file(filename: str, verbose: bool) -> bool:
         traceback.print_exc(file=sys.stderr)
         return False
 
-    original_file = join_lines_within_quotes([l.strip() for l in io.StringIO(original_file).readlines() if l.strip()])
-    parsed_file = join_lines_within_quotes([l.strip() for l in io.StringIO(str(parsed_file)).readlines() if l.strip()])
+    original_file = join_lines_within_quotes(
+        [l.strip() for l in io.StringIO(original_file).readlines() if l.strip()],
+        unescape
+    )
+    parsed_file = join_lines_within_quotes(
+        [l.strip() for l in io.StringIO(str(parsed_file)).readlines() if l.strip()],
+        unescape
+    )
 
     diff = difflib.context_diff(original_file, parsed_file, fromfile=filename, tofile="PARSED FILE")
     diff = ["    "+"\n    ".join(l.strip().split("\n"))+"\n" for l in diff]
@@ -94,18 +104,25 @@ def main():
     parser.add_argument("file_or_dir", help="Parse file or files under this directory")
     parser.add_argument("--all", action='store_true', help="Tests all files even if one fails")
     parser.add_argument("--verbose", "-v", action='store_true', help="Prints all file paths as they're parsed")
+    parser.add_argument("--unescape", action='store_true', help="Attempts to unescape strings before comparison (Godot 4.5+ standard)")
     args = parser.parse_args()
     if os.path.isfile(args.file_or_dir):
-        _parse_and_test_file(args.file_or_dir, args.verbose)
+        _parse_and_test_file(args.file_or_dir, args.verbose, args.unescape)
     else:
+        all_passed = True
         for root, _dirs, files in os.walk(args.file_or_dir, topdown=False):
             for file in files:
                 ext = os.path.splitext(file)[1]
                 if ext not in [".tscn", ".tres"]:
                     continue
                 filepath = os.path.join(root, file)
-                if not _parse_and_test_file(filepath, args.verbose) and not args.all:
-                    return 1
+                if not _parse_and_test_file(filepath, args.verbose, args.unescape):
+                    all_passed = False
+                    if not args.all:
+                        return 1
+
+        if all_passed:
+            print("All tests passed!")
 
 
 if __name__ == "__main__":
