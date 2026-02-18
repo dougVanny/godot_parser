@@ -243,8 +243,7 @@ visible = false
         resource["key"] = "value"
         self.assertNotEqual(s1, s2)
 
-
-
+class Godot4Test(unittest.TestCase):
     def test_string_special_characters(self):
         """
         Testing strings with multiple special characters. Currently matching Godot 4.6 behavior
