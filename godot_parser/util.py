@@ -15,6 +15,8 @@ def stringify_object(value):
     elif isinstance(value, bool):
         return "true" if value else "false"
     elif isinstance(value, dict):
+        if len(value) == 0:
+            return "{}"
         return (
             "{\n"
             + ",\n".join(

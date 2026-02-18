@@ -137,7 +137,7 @@ class GDSection(metaclass=GDSectionMeta):
         if self.properties:
             ret += "\n" + "\n".join(
                 [
-                    "%s = %s" % (k, stringify_object(v))
+                    "%s = %s" % ("\""+k+"\"" if ' ' in k else k, stringify_object(v))
                     for k, v in self.properties.items()
                 ]
             )
