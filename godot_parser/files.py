@@ -356,9 +356,9 @@ class GDFile(object):
 class GDCommonFile(GDFile):
     """Base class with common application logic for all Godot file types"""
 
-    def __init__(self, name: str, *sections: GDSection, _format:int=2) -> None:
+    def __init__(self, name: str, *sections: GDSection) -> None:
         super().__init__(
-            GDSection(GDSectionHeader(name, load_steps=1, format=_format)), *sections
+            GDSection(GDSectionHeader(name, load_steps=1, format=2)), *sections
         )
         self.load_steps = (
             1 + len(self.get_ext_resources()) + len(self.get_sub_resources())
@@ -449,10 +449,10 @@ class GDCommonFile(GDFile):
 
 
 class GDScene(GDCommonFile):
-    def __init__(self, *sections: GDSection, _format: int = 2) -> None:
-        super().__init__("gd_scene", *sections, _format = _format)
+    def __init__(self, *sections: GDSection) -> None:
+        super().__init__("gd_scene", *sections)
 
 
 class GDResource(GDCommonFile):
-    def __init__(self, *sections: GDSection, _format: int = 2) -> None:
-        super().__init__("gd_resource", *sections, _format = _format)
+    def __init__(self, *sections: GDSection) -> None:
+        super().__init__("gd_resource", *sections)

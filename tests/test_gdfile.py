@@ -13,7 +13,7 @@ class TestGDFile(unittest.TestCase):
 
     def test_all_data_types(self):
         """Run the parsing test cases"""
-        res = GDResource(_format = 3)
+        res = GDResource()
         res.add_section(
             GDResourceSection(
                 list=[1, 2.0, "string"],
@@ -24,7 +24,7 @@ class TestGDFile(unittest.TestCase):
         )
         self.assertEqual(
             str(res),
-            """[gd_resource load_steps=1 format=3]
+            """[gd_resource load_steps=1 format=2]
 
 [resource]
 list = [1, 2.0, "string"]
