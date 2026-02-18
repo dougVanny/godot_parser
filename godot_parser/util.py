@@ -11,7 +11,7 @@ def stringify_object(value):
         return "null"
     elif isinstance(value, str):
         #return json.dumps(value, ensure_ascii=False)
-        return "\"%s\"" % value.replace("\"", "\\\"")
+        return "\"%s\"" % value.replace("\\","\\\\").replace("\"", "\\\"")
     elif isinstance(value, bool):
         return "true" if value else "false"
     elif isinstance(value, dict):

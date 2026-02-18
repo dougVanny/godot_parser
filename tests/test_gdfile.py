@@ -255,12 +255,13 @@ visible = false
         res = GDResource()
         res.add_section(
             GDResourceSection(
-                str_value="\ta\"q\'é'd\"\n",
+                str_value="\ta\"q\'é'd\"\n\n\\",
             )
         )
         self.assertEqual(str(res), """[gd_resource load_steps=1 format=2]
 
 [resource]
 str_value = "	a\\"q'é'd\\"
-"
+
+\\\\"
 """)

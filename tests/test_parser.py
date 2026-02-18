@@ -164,13 +164,13 @@ TEST_CASES = [
     ),
     (
       """[node name="Label" type="Label" parent="." unique_id=1387035530]
-      text = "\ta\\\"q\\'é'd\\\"\n"
+      text = "\ta\\\"q\\'é'd\\\"\n\n\\\\"
       """,
         GDFile(
             GDSection(
                 GDSectionHeader("node", name="Label", type="Label", parent=".", unique_id=1387035530),
                 **{
-                    "text": "\ta\"q'é'd\"\n"
+                    "text": "\ta\"q'é'd\"\n\n\\"
                 }
             )
         ),
