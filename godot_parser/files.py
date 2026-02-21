@@ -10,6 +10,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    Any,
 )
 
 from .objects import ExtResource, GDObject, SubResource
@@ -19,11 +20,12 @@ from .sections import (
     GDSection,
     GDSectionHeader,
     GDSubResourceSection,
+    GDResourceSection,
 )
 from .structure import scene_file
 from .util import find_project_root, gdpath_to_filepath
 
-__all__ = ["GDFile", "GDScene", "GDResource"]
+__all__ = ["GDFile", "GDPackedScene", "GDResource"]
 
 # Scene and resource files seem to group the section types together and sort them.
 # This is the order I've observed
@@ -87,10 +89,6 @@ class GDFile(object):
             return self._sections
         return [s for s in self._sections if s.header.name == name]
 
-    def get_nodes(self) -> List[GDNodeSection]:
-        """Get all [node] sections"""
-        return cast(List[GDNodeSection], self.get_sections("node"))
-
     def get_ext_resources(self) -> List[GDExtResourceSection]:
         """Get all [ext_resource] sections"""
         return cast(List[GDExtResourceSection], self.get_sections("ext_resource"))
@@ -98,15 +96,6 @@ class GDFile(object):
     def get_sub_resources(self) -> List[GDSubResourceSection]:
         """Get all [sub_resource] sections"""
         return cast(List[GDSubResourceSection], self.get_sections("sub_resource"))
-
-    def find_node(
-        self, property_constraints: Optional[dict] = None, **constraints
-    ) -> Optional[GDNodeSection]:
-        """Find first [node] section that matches (see find_section)"""
-        return cast(
-            GDNodeSection,
-            self.find_section("node", property_constraints, **constraints),
-        )
 
     def find_ext_resource(
         self, property_constraints: Optional[dict] = None, **constraints
@@ -189,118 +178,6 @@ class GDFile(object):
         self.add_section(section)
         return section
 
-    def add_node(
-        self,
-        name: str,
-        type: Optional[str] = None,
-        parent: Optional[str] = None,
-        index: Optional[int] = None,
-        instance: Optional[int] = None,
-        groups: Optional[List[str]] = None,
-    ) -> GDNodeSection:
-        """
-        Simple API for adding a node
-
-        For a friendlier, tree-oriented API use use_tree()
-        """
-        node = GDNodeSection(
-            name,
-            type=type,
-            parent=parent,
-            index=index,
-            instance=instance,
-            groups=groups,
-        )
-        self.add_section(node)
-        return node
-
-    def add_ext_node(
-        self,
-        name: str,
-        instance: int,
-        parent: Optional[str] = None,
-        index: Optional[int] = None,
-    ) -> GDNodeSection:
-        """
-        Simple API for adding a node that instances an ext_resource
-
-        For a friendlier, tree-oriented API use use_tree()
-        """
-        node = GDNodeSection.ext_node(name, instance, parent=parent, index=index)
-        self.add_section(node)
-        return node
-
-    @property
-    def is_inherited(self) -> bool:
-        root = self.find_node(parent=None)
-        if root is None:
-            return False
-        return root.instance is not None
-
-    def get_parent_scene(self) -> Optional[str]:
-        root = self.find_node(parent=None)
-        if root is None or root.instance is None:
-            return None
-        parent_res = self.find_ext_resource(id=root.instance)
-        if parent_res is None:
-            return None
-        return parent_res.path
-
-    def load_parent_scene(self) -> "GDScene":
-        if self.project_root is None:
-            raise RuntimeError(
-                "load_parent_scene() requires a project_root on the GDFile"
-            )
-        root = self.find_node(parent=None)
-        if root is None or root.instance is None:
-            raise RuntimeError("Cannot load parent scene; scene is not inherited")
-        parent_res = self.find_ext_resource(id=root.instance)
-        if parent_res is None:
-            raise RuntimeError(
-                "Could not find parent scene resource id(%d)" % root.instance
-            )
-        return GDScene.load(gdpath_to_filepath(self.project_root, parent_res.path))
-
-    @contextmanager
-    def use_tree(self):
-        """
-        Helper API for working with the nodes in a tree structure
-
-        This temporarily builds the nodes into a tree, and flattens them back into the
-        GD file format when done.
-
-        Example::
-
-            with scene.use_tree() as tree:
-                tree.root = Node('MyScene')
-                tree.root.add_child(Node('Sensor', type='Area2D'))
-                tree.root.add_child(Node('HealthBar', instance=1))
-            scene.write("MyScene.tscn")
-        """
-        from .tree import Tree
-
-        tree = Tree.build(self)
-        yield tree
-        for i in range(len(self._sections) - 1, -1, -1):
-            section = self._sections[i]
-            if section.header.name == "node":
-                self._sections.pop(i)
-        nodes = tree.flatten()
-        if not nodes:
-            return
-        # Let's find out where the root node belongs and then bulk add the rest at that
-        # index
-        i = self.add_section(nodes[0])
-        self._sections[i + 1 : i + 1] = nodes[1:]
-
-    def get_node(self, path: str = ".") -> Optional[GDNodeSection]:
-        """Mimics the Godot get_node API"""
-        with self.use_tree() as tree:
-            if tree.root is None:
-                return None
-            node = tree.root.get_node(path)
-        return node.section if node is not None else None
-
     @classmethod
     def parse(cls: Type[GDFileType], contents: str) -> GDFileType:
         """Parse the contents of a Godot file"""
@@ -323,7 +200,7 @@ class GDFile(object):
     def from_parser(cls: Type[GDFileType], parse_result):
         first_section = parse_result[0]
         if first_section.header.name == "gd_scene":
-            scene = GDScene.__new__(GDScene)
+            scene = GDPackedScene.__new__(GDPackedScene)
             scene._sections = list(parse_result)
             return scene
         elif first_section.header.name == "gd_resource":
@@ -392,21 +269,25 @@ class GDCommonFile(GDFile):
         sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
         reference_type: Type[Union[ExtResource, SubResource]],
     ) -> None:
-        seen = set()
-        for ref in self._iter_node_resource_references():
-            if isinstance(ref, reference_type):
-                seen.add(ref.id)
-        if len(seen) < len(sections):
-            to_remove = [s for s in sections if s.id not in seen]
-            for s in to_remove:
-                self.remove_section(s)
+        done_removing = False
+        while not done_removing:
+            done_removing = True
+            seen = set()
+            for ref in self._iter_resource_references():
+                if isinstance(ref, reference_type):
+                    seen.add(ref.id)
+            if len(seen) < len(sections):
+                to_remove = [s for s in sections if s.id not in seen]
+                for s in to_remove:
+                    if self.remove_section(s):
+                        done_removing = False
 
     def renumber_resource_ids(self):
         """Refactor all resource IDs to be sequential with no gaps"""
         self._renumber_resource_ids(self.get_ext_resources(), ExtResource)
         self._renumber_resource_ids(self.get_sub_resources(), SubResource)
 
-    def _iter_node_resource_references(
+    def _iter_resource_references(
         self,
     ) -> Iterator[Union[ExtResource, SubResource]]:
         def iter_resources(value):
@@ -416,17 +297,20 @@ class GDCommonFile(GDFile):
                 for v in value:
                     yield from iter_resources(v)
             elif isinstance(value, dict):
+                for k in value.keys():
+                    yield from iter_resources(k)
                 for v in value.values():
                     yield from iter_resources(v)
             elif isinstance(value, GDObject):
                 for v in value.args:
                     yield from iter_resources(v)
 
-        for node in self.get_nodes():
-            yield from iter_resources(node.header.attributes)
-            yield from iter_resources(node.properties)
+        for reference in self._iter_references():
+            yield from iter_resources(reference)
+
+    def _iter_references(self) -> Iterator[Any]:
         for resource in self.get_sections("resource"):
-            yield from iter_resources(resource.properties)
+            yield resource.properties
 
     def _renumber_resource_ids(
         self,
@@ -440,7 +324,7 @@ class GDCommonFile(GDFile):
             section.id = i + 1
 
         # Now we update all references to use the new number
-        for ref in self._iter_node_resource_references():
+        for ref in self._iter_resource_references():
             if isinstance(ref, reference_type):
                 try:
                     ref.id = id_map[ref.id]
@@ -448,11 +332,160 @@ class GDCommonFile(GDFile):
                     raise GodotFileException("Unknown resource ID %d" % ref.id) from e
 
 
-class GDScene(GDCommonFile):
+class GDResource(GDCommonFile):
+    def __init__(self, type: Optional[str] = None, *sections: GDSection, **attributes) -> None:
+        super().__init__("gd_resource", *sections)
+
+        if type is not None:
+            self._sections[0].header["type"] = type
+
+        self.resource_section = GDResourceSection(**attributes)
+        self.add_section(self.resource_section)
+
+    def __getitem__(self, k: str) -> Any:
+        return self.resource_section[k]
+
+    def __setitem__(self, k: str, v: Any) -> None:
+        self.resource_section[k] = v
+
+    def __delitem__(self, k: str) -> None:
+        try:
+            del self.resource_section[k]
+        except KeyError:
+            pass
+
+
+class GDPackedScene(GDCommonFile):
     def __init__(self, *sections: GDSection) -> None:
         super().__init__("gd_scene", *sections)
 
+    def get_nodes(self) -> List[GDNodeSection]:
+        """Get all [node] sections"""
+        return cast(List[GDNodeSection], self.get_sections("node"))
 
-class GDResource(GDCommonFile):
-    def __init__(self, *sections: GDSection) -> None:
-        super().__init__("gd_resource", *sections)
+    def find_node(
+        self, property_constraints: Optional[dict] = None, **constraints
+    ) -> Optional[GDNodeSection]:
+        """Find first [node] section that matches (see find_section)"""
+        return cast(
+            GDNodeSection,
+            self.find_section("node", property_constraints, **constraints),
+        )
+
+    def add_node(
+        self,
+        name: str,
+        type: Optional[str] = None,
+        parent: Optional[str] = None,
+        index: Optional[int] = None,
+        instance: Optional[int] = None,
+        groups: Optional[List[str]] = None,
+    ) -> GDNodeSection:
+        """
+        Simple API for adding a node
+
+        For a friendlier, tree-oriented API use use_tree()
+        """
+        node = GDNodeSection(
+            name,
+            type=type,
+            parent=parent,
+            index=index,
+            instance=instance,
+            groups=groups,
+        )
+        self.add_section(node)
+        return node
+
+    def add_ext_node(
+        self,
+        name: str,
+        instance: int,
+        parent: Optional[str] = None,
+        index: Optional[int] = None,
+    ) -> GDNodeSection:
+        """
+        Simple API for adding a node that instances an ext_resource
+
+        For a friendlier, tree-oriented API use use_tree()
+        """
+        node = GDNodeSection.ext_node(name, instance, parent=parent, index=index)
+        self.add_section(node)
+        return node
+
+    @property
+    def is_inherited(self) -> bool:
+        root = self.find_node(parent=None)
+        if root is None:
+            return False
+        return root.instance is not None
+
+    def get_parent_scene(self) -> Optional[str]:
+        root = self.find_node(parent=None)
+        if root is None or root.instance is None:
+            return None
+        parent_res = self.find_ext_resource(id=root.instance)
+        if parent_res is None:
+            return None
+        return parent_res.path
+
+    def load_parent_scene(self) -> "GDPackedScene":
+        if self.project_root is None:
+            raise RuntimeError(
+                "load_parent_scene() requires a project_root on the GDFile"
+            )
+        root = self.find_node(parent=None)
+        if root is None or root.instance is None:
+            raise RuntimeError("Cannot load parent scene; scene is not inherited")
+        parent_res = self.find_ext_resource(id=root.instance)
+        if parent_res is None:
+            raise RuntimeError(
+                "Could not find parent scene resource id(%d)" % root.instance
+            )
+        return GDPackedScene.load(gdpath_to_filepath(self.project_root, parent_res.path))
+
+    @contextmanager
+    def use_tree(self):
+        """
+        Helper API for working with the nodes in a tree structure
+
+        This temporarily builds the nodes into a tree, and flattens them back into the
+        GD file format when done.
+
+        Example::
+
+            with scene.use_tree() as tree:
+                tree.root = Node('MyScene')
+                tree.root.add_child(Node('Sensor', type='Area2D'))
+                tree.root.add_child(Node('HealthBar', instance=1))
+            scene.write("MyScene.tscn")
+        """
+        from .tree import Tree
+
+        tree = Tree.build(self)
+        yield tree
+        for i in range(len(self._sections) - 1, -1, -1):
+            section = self._sections[i]
+            if section.header.name == "node":
+                self._sections.pop(i)
+        nodes = tree.flatten()
+        if not nodes:
+            return
+        # Let's find out where the root node belongs and then bulk add the rest at that
+        # index
+        i = self.add_section(nodes[0])
+        self._sections[i + 1 : i + 1] = nodes[1:]
+
+    def get_node(self, path: str = ".") -> Optional[GDNodeSection]:
+        """Mimics the Godot get_node API"""
+        with self.use_tree() as tree:
+            if tree.root is None:
+                return None
+            node = tree.root.get_node(path)
+        return node.section if node is not None else None
+
+    def _iter_references(self) -> Iterator[Any]:
+        yield from super()._iter_references()
+        for node in self.get_nodes():
+            yield node.header.attributes
+            yield node.properties
