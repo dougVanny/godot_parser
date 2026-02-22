@@ -3,14 +3,14 @@ import unittest
 from godot_parser import (
     Color,
     ExtResource,
+    GDObject,
     NodePath,
+    StringName,
     SubResource,
+    TypedArray,
+    TypedDictionary,
     Vector2,
     Vector3,
-    StringName,
-    GDObject,
-    TypedDictionary,
-    TypedArray,
 )
 
 

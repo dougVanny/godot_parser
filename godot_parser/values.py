@@ -14,7 +14,7 @@ from pyparsing import (
     common,
 )
 
-from .objects import GDObject, StringName, TypedDictionary, TypedArray
+from .objects import GDObject, StringName, TypedArray, TypedDictionary
 
 boolean = (
     (Keyword("true") | Keyword("false"))

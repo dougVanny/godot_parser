@@ -8,11 +8,11 @@ from godot_parser import (
     GDObject,
     GDSection,
     GDSectionHeader,
-    Vector2,
     StringName,
-    parse,
-    TypedDictionary,
     TypedArray,
+    TypedDictionary,
+    Vector2,
+    parse,
 )
 
 HERE = os.path.dirname(__file__)
