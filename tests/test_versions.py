@@ -64,7 +64,7 @@ class TestOutputFormat(unittest.TestCase):
 
     def test_punctuation_spaces(self):
         resource = GDResource()
-        resource["array"] = [Vector3(1,2,3)]
+        resource["array"] = [Vector3(1, 2, 3)]
 
         self.assertEqual(resource.output_to_string(OutputFormat(punctuation_spaces=False)),
                          """[gd_resource format=3]
@@ -77,3 +77,56 @@ array = [Vector3(1, 2, 3)]\n""")
 
 [resource]
 array = [ Vector3( 1, 2, 3 ) ]\n""")
+
+    def test_load_steps(self):
+        resource = GDResource()
+        resource["toggle"] = True
+
+        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=False)),
+                         """[gd_resource format=3]
+
+[resource]
+toggle = true\n""")
+        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=True)),
+                         """[gd_resource load_steps=1 format=3]
+
+[resource]
+toggle = true\n""")
+
+        resource.add_ext_resource("res://a.tres", "CustomResource")
+
+        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=False)),
+                         """[gd_resource format=3]
+
+[ext_resource path="res://a.tres" type="CustomResource" id=1]
+
+[resource]
+toggle = true\n""")
+        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=True)),
+                         """[gd_resource load_steps=2 format=3]
+
+[ext_resource path="res://a.tres" type="CustomResource" id=1]
+
+[resource]
+toggle = true\n""")
+
+        resource.add_sub_resource("CustomResource")
+
+        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=False)),
+                         """[gd_resource format=3]
+
+[ext_resource path="res://a.tres" type="CustomResource" id=1]
+
+[sub_resource type="CustomResource" id=1]
+
+[resource]
+toggle = true\n""")
+        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=True)),
+                         """[gd_resource load_steps=3 format=3]
+
+[ext_resource path="res://a.tres" type="CustomResource" id=1]
+
+[sub_resource type="CustomResource" id=1]
+
+[resource]
+toggle = true\n""")
