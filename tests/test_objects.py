@@ -1,6 +1,7 @@
 import unittest
 
-from godot_parser import Color, ExtResource, NodePath, SubResource, Vector2, Vector3, StringName, GDObject, TypedDictionary, TypedArray
+from godot_parser import Color, ExtResource, NodePath, SubResource, Vector2, Vector3, StringName, GDObject, \
+    TypedDictionary, TypedArray
 
 
 class TestGDObjects(unittest.TestCase):

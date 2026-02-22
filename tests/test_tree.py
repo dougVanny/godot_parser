@@ -118,7 +118,7 @@ class TestInheritedScenes(unittest.TestCase):
         super(TestInheritedScenes, cls).setUpClass()
         cls.project_dir = tempfile.mkdtemp()
         with open(
-            os.path.join(cls.project_dir, "project.godot"), "w", encoding="utf-8"
+                os.path.join(cls.project_dir, "project.godot"), "w", encoding="utf-8"
         ) as ofile:
             ofile.write("fake project")
         cls.root_scene = os.path.join(cls.project_dir, "Root.tscn")

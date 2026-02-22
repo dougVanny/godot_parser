@@ -75,7 +75,7 @@ class GDObject(metaclass=GDObjectMeta):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(frozenset((self.name,*self.args)))
+        return hash(frozenset((self.name, *self.args)))
 
 
 class Vector2(GDObject):
@@ -253,7 +253,7 @@ class SubResource(GDObject):
         self.args[0] = id
 
 
-class TypedArray():
+class TypedArray:
     def __init__(self, type, list_) -> None:
         self.name = "Array"
         self.type = type
@@ -270,11 +270,7 @@ class TypedArray():
         return TypedArray.WithCustomName(*parse_result)
 
     def __str__(self) -> str:
-        return "%s[%s](%s)" % (
-            self.name,
-            self.type,
-            stringify_object(self.list_)
-        )
+        return "%s[%s](%s)" % (self.name, self.type, stringify_object(self.list_))
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -282,18 +278,20 @@ class TypedArray():
     def __eq__(self, other) -> bool:
         if not isinstance(other, TypedArray):
             return False
-        return self.name == other.name and \
-            self.type == other.type and \
-            self.list_ == other.list_
+        return (
+            self.name == other.name
+            and self.type == other.type
+            and self.list_ == other.list_
+        )
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(frozenset((self.name,self.type,self.list_)))
+        return hash(frozenset((self.name, self.type, self.list_)))
 
 
-class TypedDictionary():
+class TypedDictionary:
     def __init__(self, key_type, value_type, dict_) -> None:
         self.name = "Dictionary"
         self.key_type = key_type
@@ -301,7 +299,9 @@ class TypedDictionary():
         self.dict_ = dict_
 
     @classmethod
-    def WithCustomName(cls: Type["TypedDictionary"], name, key_type, value_type, dict_) -> "TypedDictionary":
+    def WithCustomName(
+        cls: Type["TypedDictionary"], name, key_type, value_type, dict_
+    ) -> "TypedDictionary":
         custom_dict = TypedDictionary(key_type, value_type, dict_)
         custom_dict.name = name
         return custom_dict
@@ -315,7 +315,7 @@ class TypedDictionary():
             self.name,
             self.key_type,
             self.value_type,
-            stringify_object(self.dict_)
+            stringify_object(self.dict_),
         )
 
     def __repr__(self) -> str:
@@ -324,18 +324,21 @@ class TypedDictionary():
     def __eq__(self, other) -> bool:
         if not isinstance(other, TypedDictionary):
             return False
-        return self.name == other.name and \
-            self.key_type == other.key_type and \
-            self.value_type == other.value_type and \
-            self.dict_ == other.dict_
+        return (
+            self.name == other.name
+            and self.key_type == other.key_type
+            and self.value_type == other.value_type
+            and self.dict_ == other.dict_
+        )
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(frozenset((self.name,self.key_type,self.value_type,self.dict_)))
+        return hash(frozenset((self.name, self.key_type, self.value_type, self.dict_)))
 
-class StringName():
+
+class StringName:
     def __init__(self, str) -> None:
         self.str = str
 

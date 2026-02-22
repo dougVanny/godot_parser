@@ -38,7 +38,6 @@ SCENE_ORDER = [
     "editable",
 ]
 
-
 GDFileType = TypeVar("GDFileType", bound="GDFile")
 
 
@@ -100,7 +99,7 @@ class GDFile(object):
         return cast(List[GDSubResourceSection], self.get_sections("sub_resource"))
 
     def find_node(
-        self, property_constraints: Optional[dict] = None, **constraints
+            self, property_constraints: Optional[dict] = None, **constraints
     ) -> Optional[GDNodeSection]:
         """Find first [node] section that matches (see find_section)"""
         return cast(
@@ -109,7 +108,7 @@ class GDFile(object):
         )
 
     def find_ext_resource(
-        self, property_constraints: Optional[dict] = None, **constraints
+            self, property_constraints: Optional[dict] = None, **constraints
     ) -> Optional[GDExtResourceSection]:
         """Find first [ext_resource] section that matches (see find_section)"""
         return cast(
@@ -118,7 +117,7 @@ class GDFile(object):
         )
 
     def find_sub_resource(
-        self, property_constraints: Optional[dict] = None, **constraints
+            self, property_constraints: Optional[dict] = None, **constraints
     ) -> Optional[GDSubResourceSection]:
         """Find first [sub_resource] section that matches (see find_section)"""
         return cast(
@@ -127,10 +126,10 @@ class GDFile(object):
         )
 
     def find_section(
-        self,
-        section_name_: Optional[str] = None,
-        property_constraints: Optional[dict] = None,
-        **constraints
+            self,
+            section_name_: Optional[str] = None,
+            property_constraints: Optional[dict] = None,
+            **constraints
     ) -> Optional[GDSection]:
         """
         Find the first section that matches
@@ -146,16 +145,16 @@ class GDFile(object):
             scene.find_section('ext_resource', path='Health.tscn')
         """
         for section in self.find_all(
-            section_name_, property_constraints=property_constraints, **constraints
+                section_name_, property_constraints=property_constraints, **constraints
         ):
             return section
         return None
 
     def find_all(
-        self,
-        section_name_: Optional[str] = None,
-        property_constraints: Optional[dict] = None,
-        **constraints
+            self,
+            section_name_: Optional[str] = None,
+            property_constraints: Optional[dict] = None,
+            **constraints
     ) -> Iterable[GDSection]:
         """Same as find_section, but returns all matches"""
         for section in self.get_sections(section_name_):
@@ -190,13 +189,13 @@ class GDFile(object):
         return section
 
     def add_node(
-        self,
-        name: str,
-        type: Optional[str] = None,
-        parent: Optional[str] = None,
-        index: Optional[int] = None,
-        instance: Optional[int] = None,
-        groups: Optional[List[str]] = None,
+            self,
+            name: str,
+            type: Optional[str] = None,
+            parent: Optional[str] = None,
+            index: Optional[int] = None,
+            instance: Optional[int] = None,
+            groups: Optional[List[str]] = None,
     ) -> GDNodeSection:
         """
         Simple API for adding a node
@@ -215,11 +214,11 @@ class GDFile(object):
         return node
 
     def add_ext_node(
-        self,
-        name: str,
-        instance: int,
-        parent: Optional[str] = None,
-        index: Optional[int] = None,
+            self,
+            name: str,
+            instance: int,
+            parent: Optional[str] = None,
+            index: Optional[int] = None,
     ) -> GDNodeSection:
         """
         Simple API for adding a node that instances an ext_resource
@@ -291,7 +290,7 @@ class GDFile(object):
         # Let's find out where the root node belongs and then bulk add the rest at that
         # index
         i = self.add_section(nodes[0])
-        self._sections[i + 1 : i + 1] = nodes[1:]
+        self._sections[i + 1: i + 1] = nodes[1:]
 
     def get_node(self, path: str = ".") -> Optional[GDNodeSection]:
         """Mimics the Godot get_node API"""
@@ -361,7 +360,7 @@ class GDCommonFile(GDFile):
             GDSection(GDSectionHeader(name, load_steps=1, format=2)), *sections
         )
         self.load_steps = (
-            1 + len(self.get_ext_resources()) + len(self.get_sub_resources())
+                1 + len(self.get_ext_resources()) + len(self.get_sub_resources())
         )
 
     @property
@@ -388,9 +387,9 @@ class GDCommonFile(GDFile):
         self._remove_unused_resources(self.get_sub_resources(), SubResource)
 
     def _remove_unused_resources(
-        self,
-        sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
-        reference_type: Type[Union[ExtResource, SubResource]],
+            self,
+            sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
+            reference_type: Type[Union[ExtResource, SubResource]],
     ) -> None:
         seen = set()
         for ref in self._iter_node_resource_references():
@@ -407,7 +406,7 @@ class GDCommonFile(GDFile):
         self._renumber_resource_ids(self.get_sub_resources(), SubResource)
 
     def _iter_node_resource_references(
-        self,
+            self,
     ) -> Iterator[Union[ExtResource, SubResource]]:
         def iter_resources(value):
             if isinstance(value, (ExtResource, SubResource)):
@@ -429,9 +428,9 @@ class GDCommonFile(GDFile):
             yield from iter_resources(resource.properties)
 
     def _renumber_resource_ids(
-        self,
-        sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
-        reference_type: Type[Union[ExtResource, SubResource]],
+            self,
+            sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
+            reference_type: Type[Union[ExtResource, SubResource]],
     ) -> None:
         id_map = {}
         # First we renumber all the resource IDs so there are no gaps
