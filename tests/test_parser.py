@@ -3,8 +3,17 @@ import unittest
 
 from pyparsing import ParseException
 
-from godot_parser import GDFile, GDObject, GDSection, GDSectionHeader, Vector2, StringName, parse, TypedDictionary, \
-    TypedArray
+from godot_parser import (
+    GDFile,
+    GDObject,
+    GDSection,
+    GDSectionHeader,
+    Vector2,
+    StringName,
+    parse,
+    TypedDictionary,
+    TypedArray,
+)
 
 HERE = os.path.dirname(__file__)
 
@@ -130,8 +139,8 @@ TEST_CASES = [
                 **{
                     "string_value": "String",
                     "string_name_value": StringName("StringName"),
-                    "string_quote": "\"String\"",
-                    "string_name_quote": StringName("\"StringName\""),
+                    "string_quote": '"String"',
+                    "string_name_quote": StringName('"StringName"'),
                     "string_single_quote": "'String'",
                     "string_name_single_quote": StringName("'StringName'"),
                 }
@@ -151,14 +160,16 @@ TEST_CASES = [
             GDSection(
                 GDSectionHeader("sub_resource", type="CustomType", id=1),
                 **{
-                    "typed_dict_1": TypedDictionary("StringName", GDObject("ExtResource", "1_testt"),
-                                                    {
-                                                        StringName("key"): GDObject("ExtResource", "2_testt")
-                                                    }),
-                    "typed_dict_2": TypedDictionary(GDObject("ExtResource", "1_testt"), "StringName",
-                                                    {
-                                                        GDObject("ExtResource", "2_testt"): StringName("key")
-                                                    })
+                    "typed_dict_1": TypedDictionary(
+                        "StringName",
+                        GDObject("ExtResource", "1_testt"),
+                        {StringName("key"): GDObject("ExtResource", "2_testt")},
+                    ),
+                    "typed_dict_2": TypedDictionary(
+                        GDObject("ExtResource", "1_testt"),
+                        "StringName",
+                        {GDObject("ExtResource", "2_testt"): StringName("key")},
+                    ),
                 }
             )
         ),
@@ -172,17 +183,21 @@ TEST_CASES = [
             GDSection(
                 GDSectionHeader("sub_resource", type="CustomType", id=1),
                 **{
-                    "typed_array_1": TypedArray("StringName",
-                                                [
-                                                    StringName("a"),
-                                                    StringName("b"),
-                                                    StringName("c"),
-                                                ]),
-                    "typed_array_2": TypedArray(GDObject("ExtResource", "1_typee"),
-                                                [
-                                                    GDObject("ExtResource", "1_qwert"),
-                                                    GDObject("ExtResource", "2_testt"),
-                                                ])
+                    "typed_array_1": TypedArray(
+                        "StringName",
+                        [
+                            StringName("a"),
+                            StringName("b"),
+                            StringName("c"),
+                        ],
+                    ),
+                    "typed_array_2": TypedArray(
+                        GDObject("ExtResource", "1_typee"),
+                        [
+                            GDObject("ExtResource", "1_qwert"),
+                            GDObject("ExtResource", "2_testt"),
+                        ],
+                    ),
                 }
             )
         ),
@@ -193,10 +208,10 @@ TEST_CASES = [
         """,
         GDFile(
             GDSection(
-                GDSectionHeader("node", name="Label", type="Label", parent=".", unique_id=1387035530),
-                **{
-                    "text": "\ta\"q'é'd\"\n\n\\"
-                }
+                GDSectionHeader(
+                    "node", name="Label", type="Label", parent=".", unique_id=1387035530
+                ),
+                **{"text": "\ta\"q'é'd\"\n\n\\"}
             )
         ),
     ),

@@ -136,7 +136,7 @@ class GDSection(metaclass=GDSectionMeta):
         if self.properties:
             ret += "\n" + "\n".join(
                 [
-                    "%s = %s" % ("\"" + k + "\"" if ' ' in k else k, stringify_object(v))
+                    "%s = %s" % ('"' + k + '"' if " " in k else k, stringify_object(v))
                     for k, v in self.properties.items()
                 ]
             )
@@ -220,15 +220,15 @@ class GDNodeSection(GDSection):
     """Section representing a [node]"""
 
     def __init__(
-            self,
-            name: str,
-            type: Optional[str] = None,
-            parent: Optional[str] = None,
-            instance: Optional[int] = None,
-            index: Optional[int] = None,
-            groups: Optional[List[str]] = None,
-            # TODO: instance_placeholder, owner are referenced in the docs, but I
-            # haven't seen them come up yet in my project
+        self,
+        name: str,
+        type: Optional[str] = None,
+        parent: Optional[str] = None,
+        instance: Optional[int] = None,
+        index: Optional[int] = None,
+        groups: Optional[List[str]] = None,
+        # TODO: instance_placeholder, owner are referenced in the docs, but I
+        # haven't seen them come up yet in my project
     ):
         kwargs = {
             "name": name,
@@ -246,11 +246,11 @@ class GDNodeSection(GDSection):
 
     @classmethod
     def ext_node(
-            cls,
-            name: str,
-            instance: int,
-            parent: Optional[str] = None,
-            index: Optional[int] = None,
+        cls,
+        name: str,
+        instance: int,
+        parent: Optional[str] = None,
+        index: Optional[int] = None,
     ):
         return cls(name, parent=parent, instance=instance, index=index)
 
