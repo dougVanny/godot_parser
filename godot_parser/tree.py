@@ -7,7 +7,6 @@ from .files import GDFile
 from .sections import GDNodeSection
 
 __all__ = ["Node", "TreeMutationException"]
-SENTINEL = object()
 
 
 class TreeMutationException(Exception):
@@ -106,35 +105,34 @@ class Node(object):
             self._type = None
         self._instance = new_instance
 
+    def __contains__(self, k: str) -> bool:
+        if k in self.properties:
+            return True
+        if self._inherited_node != None:
+            return k in self._inherited_node
+        return False
+
     def __getitem__(self, k: str) -> Any:
-        v = self.properties.get(k, SENTINEL)
-        if v is SENTINEL:
-            if self._inherited_node is not None:
-                return self._inherited_node[k]
-            raise KeyError("No property %s found on node %s" % (k, self.name))
-        return v
+        if k in self.properties:
+            return self.properties[k]
+        if self._inherited_node is not None:
+            return self._inherited_node[k]
+        raise KeyError("No property %s found on node %s" % (k, self.name))
 
     def __setitem__(self, k: str, v: Any) -> None:
-        if self._inherited_node is not None and v == self._inherited_node.get(
-            k, SENTINEL
-        ):
+        if self._inherited_node is not None and k in self._inherited_node and v == self._inherited_node[k]:
             del self[k]
         else:
             self.properties[k] = v
 
     def __delitem__(self, k: str) -> None:
-        try:
-            del self.properties[k]
-        except KeyError:
-            pass
+        del self.properties[k]
 
     def get(self, k: str, default: Any = None) -> Any:
-        v = self.properties.get(k, SENTINEL)
-        if v is SENTINEL:
-            if self._inherited_node is not None:
-                return self._inherited_node.get(k, default)
+        try:
+            return self[k]
+        except KeyError:
             return default
-        return v
 
     @classmethod
     def from_section(cls, section: GDNodeSection):

@@ -9,7 +9,7 @@ class TestGDFile(unittest.TestCase):
 
     def test_basic_scene(self):
         """Run the parsing test cases"""
-        self.assertEqual(str(GDPackedScene()), "[gd_scene load_steps=1 format=2]\n")
+        self.assertEqual(str(GDPackedScene()), "[gd_scene format=3]\n")
 
     def test_all_data_types(self):
         """Run the parsing test cases"""
@@ -21,7 +21,7 @@ class TestGDFile(unittest.TestCase):
         )
         self.assertEqual(
             str(res),
-            """[gd_resource load_steps=1 format=2]
+            """[gd_resource format=3]
 
 [resource]
 list = [1, 2.0, "string"]
@@ -39,7 +39,7 @@ escaped = "foo(\\"bar\\")"
         scene.add_ext_resource("res://Other.tscn", "PackedScene")
         self.assertEqual(
             str(scene),
-            """[gd_scene load_steps=2 format=2]
+            """[gd_scene format=3]
 
 [ext_resource path="res://Other.tscn" type="PackedScene" id=1]
 """,
@@ -51,7 +51,7 @@ escaped = "foo(\\"bar\\")"
         scene.add_sub_resource("Animation")
         self.assertEqual(
             str(scene),
-            """[gd_scene load_steps=2 format=2]
+            """[gd_scene format=3]
 
 [sub_resource type="Animation" id=1]
 """,
@@ -64,7 +64,7 @@ escaped = "foo(\\"bar\\")"
         scene.add_node("Child", type="Area2D", parent=".")
         self.assertEqual(
             str(scene),
-            """[gd_scene load_steps=1 format=2]
+            """[gd_scene format=3]
 
 [node name="RootNode" type="Node2D"]
 
@@ -82,7 +82,7 @@ escaped = "foo(\\"bar\\")"
             )
         self.assertEqual(
             str(scene),
-            """[gd_scene load_steps=1 format=2]
+            """[gd_scene format=3]
 
 [node name="RootNode" type="Node2D"]
 
@@ -102,7 +102,7 @@ visible = false
             child.add_child(Node("ChildChild2", type="Node"))
         self.assertEqual(
             str(scene),
-            """[gd_scene load_steps=1 format=2]
+            """[gd_scene format=3]
 
 [node name="RootNode" type="Node2D"]
 
@@ -274,7 +274,7 @@ class Godot4Test(unittest.TestCase):
         For this reason, this test is being done at a GDFile level, where this method is called upon parsing
         """
         res = GDResource(str_value = "\ta\"q\'é'd\"\n\n\\")
-        self.assertEqual(str(res), """[gd_resource load_steps=1 format=2]
+        self.assertEqual(str(res), """[gd_resource format=3]
 
 [resource]
 str_value = "	a\\"q'é'd\\"

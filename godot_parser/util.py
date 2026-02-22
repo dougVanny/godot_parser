@@ -3,8 +3,10 @@
 import os
 from typing import Optional
 
+from godot_parser.output import OutputFormat, Outputable
 
-def stringify_object(value):
+
+def stringify_object(value, output_format : Optional[OutputFormat] = OutputFormat()):
     """Serialize a value to the godot file format"""
     if value is None:
         return "null"
@@ -13,17 +15,17 @@ def stringify_object(value):
     elif isinstance(value, bool):
         return "true" if value else "false"
     elif isinstance(value, dict):
-        if len(value) == 0:
-            return "{}"
         return (
             "{\n"
             + ",\n".join(
-                ['%s: %s' % (stringify_object(k), stringify_object(v)) for k, v in value.items()]
+                ['%s: %s' % (stringify_object(k, output_format), stringify_object(v, output_format)) for k, v in value.items()]
             )
             + "\n}"
         )
     elif isinstance(value, list):
-        return "[" + ", ".join([stringify_object(v) for v in value]) + "]"
+        return output_format.surround_brackets(", ".join([stringify_object(v, output_format) for v in value]))
+    elif isinstance(value, Outputable):
+        return value.output_to_string(output_format)
     else:
         return str(value)
 

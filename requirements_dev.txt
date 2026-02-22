@@ -4,3 +4,4 @@ tox
 twine
 bumpversion
 build
+packaging

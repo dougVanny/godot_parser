@@ -39,7 +39,6 @@ class TestGDSections(unittest.TestCase):
 
         del s["vframes"]
         self.assertEqual(s.get("vframes"), None)
-        del s["vframes"]
 
     def test_ext_resource(self):
         """Test for GDExtResourceSection"""

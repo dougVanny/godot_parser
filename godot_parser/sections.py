@@ -3,6 +3,7 @@ from collections import OrderedDict
 from typing import Any, List, Optional, Type, TypeVar
 
 from .objects import ExtResource, SubResource
+from .output import OutputFormat, Outputable
 from .util import stringify_object
 
 __all__ = [
@@ -18,7 +19,7 @@ __all__ = [
 GD_SECTION_REGISTRY = {}
 
 
-class GDSectionHeader(object):
+class GDSectionHeader(Outputable):
     """
     Represents the header for a section
 
@@ -33,6 +34,9 @@ class GDSectionHeader(object):
         for k, v in kwargs.items():
             self.attributes[k] = v
 
+    def __contains__(self, k: str) -> bool:
+        return k in self.attributes
+
     def __getitem__(self, k: str) -> Any:
         return self.attributes[k]
 
@@ -40,10 +44,7 @@ class GDSectionHeader(object):
         self.attributes[k] = v
 
     def __delitem__(self, k: str):
-        try:
-            del self.attributes[k]
-        except KeyError:
-            pass
+        del self.attributes[k]
 
     def get(self, k: str, default: Any = None) -> Any:
         return self.attributes.get(k, default)
@@ -55,11 +56,11 @@ class GDSectionHeader(object):
             header.attributes[attribute[0]] = attribute[1]
         return header
 
-    def __str__(self) -> str:
+    def _output_to_string(self, output_format : OutputFormat) -> str:
         attribute_str = ""
         if self.attributes:
             attribute_str = " " + " ".join(
-                ["%s=%s" % (k, stringify_object(v)) for k, v in self.attributes.items()]
+                ["%s=%s" % (k, stringify_object(v, output_format)) for k, v in self.attributes.items()]
             )
         return "[" + self.name + attribute_str + "]"
 
@@ -89,7 +90,7 @@ class GDSectionMeta(type):
 GDSectionType = TypeVar("GDSectionType", bound="GDSection")
 
 
-class GDSection(metaclass=GDSectionMeta):
+class GDSection(Outputable, metaclass=GDSectionMeta):
     """
     Represents a full section of a GD file
 
@@ -106,6 +107,9 @@ class GDSection(metaclass=GDSectionMeta):
         for k, v in kwargs.items():
             self.properties[k] = v
 
+    def __contains__(self, k: str) -> bool:
+        return k in self.properties
+
     def __getitem__(self, k: str) -> Any:
         return self.properties[k]
 
@@ -113,10 +117,7 @@ class GDSection(metaclass=GDSectionMeta):
         self.properties[k] = v
 
     def __delitem__(self, k: str) -> None:
-        try:
-            del self.properties[k]
-        except KeyError:
-            pass
+        del self.properties[k]
 
     def get(self, k: str, default: Any = None) -> Any:
         return self.properties.get(k, default)
@@ -132,12 +133,12 @@ class GDSection(metaclass=GDSectionMeta):
             section[k] = v
         return section
 
-    def __str__(self) -> str:
-        ret = str(self.header)
+    def _output_to_string(self, output_format : OutputFormat) -> str:
+        ret = self.header.output_to_string(output_format)
         if self.properties:
             ret += "\n" + "\n".join(
                 [
-                    "%s = %s" % ("\""+k+"\"" if ' ' in k else k, stringify_object(v))
+                    "%s = %s" % ("\"" + k + "\"" if ' ' in k else k, stringify_object(v, output_format))
                     for k, v in self.properties.items()
                 ]
             )
@@ -270,7 +271,8 @@ class GDNodeSection(GDSection):
     @type.setter
     def type(self, type: Optional[str]) -> None:
         if type is None:
-            del self.header["type"]
+            if "type" in self.header:
+                del self.header["type"]
         else:
             self.header["type"] = type
             self.instance = None
@@ -282,7 +284,8 @@ class GDNodeSection(GDSection):
     @parent.setter
     def parent(self, parent: Optional[str]) -> None:
         if parent is None:
-            del self.header["parent"]
+            if "parent" in self.header:
+                del self.header["parent"]
         else:
             self.header["parent"] = parent
 
@@ -296,7 +299,8 @@ class GDNodeSection(GDSection):
     @instance.setter
     def instance(self, instance: Optional[int]) -> None:
         if instance is None:
-            del self.header["instance"]
+            if "instance" in self.header:
+                del self.header["instance"]
         else:
             self.header["instance"] = ExtResource(instance)
             self.type = None
@@ -311,7 +315,8 @@ class GDNodeSection(GDSection):
     @index.setter
     def index(self, index: Optional[int]) -> None:
         if index is None:
-            del self.header["index"]
+            if "index" in self.header:
+                del self.header["index"]
         else:
             self.header["index"] = str(index)
 
@@ -322,7 +327,8 @@ class GDNodeSection(GDSection):
     @groups.setter
     def groups(self, groups: Optional[List[str]]) -> None:
         if groups is None:
-            del self.header["groups"]
+            if "groups" in self.header:
+                del self.header["groups"]
         else:
             self.header["groups"] = groups
 

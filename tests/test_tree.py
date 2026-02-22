@@ -93,8 +93,7 @@ class TestTree(unittest.TestCase):
             self.assertEqual(tree.root["vframes"], 10)
             tree.root["hframes"] = 10
             del tree.root["hframes"]
-            del tree.root["hframes"]
-            self.assertIsNone(tree.root.get("hframes"))
+            self.assertNotIn("hframes",tree.root)
         child = scene.find_section("node")
         self.assertEqual(child["vframes"], 10)
 

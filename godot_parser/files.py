@@ -14,6 +14,7 @@ from typing import (
 )
 
 from .objects import ExtResource, GDObject, SubResource
+from .output import OutputFormat, Outputable
 from .sections import (
     GDExtResourceSection,
     GDNodeSection,
@@ -48,7 +49,7 @@ class GodotFileException(Exception):
     """Thrown when there are errors in a Godot file"""
 
 
-class GDFile(object):
+class GDFile(Outputable):
     """Base class representing the contents of a Godot file"""
 
     project_root: Optional[str] = None
@@ -179,12 +180,12 @@ class GDFile(object):
         return section
 
     @classmethod
-    def parse(cls: Type[GDFileType], contents: str) -> GDFileType:
+    def parse(cls: Type[GDFile], contents: str) -> GDFile:
         """Parse the contents of a Godot file"""
         return cls.from_parser(scene_file.parse_with_tabs().parse_string(contents, parse_all=True))
 
     @classmethod
-    def load(cls: Type[GDFileType], filepath: str) -> GDFileType:
+    def load(cls: Type[GDFile], filepath: str) -> GDFile:
         with open(filepath, "r", encoding="utf-8") as ifile:
             try:
                 file = cls.parse(ifile.read())
@@ -197,7 +198,7 @@ class GDFile(object):
         return file
 
     @classmethod
-    def from_parser(cls: Type[GDFileType], parse_result):
+    def from_parser(cls: Type[GDFile], parse_result) -> GDFile:
         first_section = parse_result[0]
         if first_section.header.name == "gd_scene":
             scene = GDPackedScene.__new__(GDPackedScene)
@@ -215,8 +216,8 @@ class GDFile(object):
         with open(filename, "w", encoding="utf-8") as ofile:
             ofile.write(str(self))
 
-    def __str__(self) -> str:
-        return "\n\n".join([str(s) for s in self._sections]) + "\n"
+    def _output_to_string(self, output_format : OutputFormat) -> str:
+        return "\n\n".join([s.output_to_string(output_format) for s in self._sections]) + "\n"
 
     def __repr__(self) -> str:
         return "%s(%s)" % (type(self).__name__, self.__str__())
@@ -234,31 +235,35 @@ class GDCommonFile(GDFile):
     """Base class with common application logic for all Godot file types"""
 
     def __init__(self, name: str, *sections: GDSection) -> None:
-        super().__init__(
-            GDSection(GDSectionHeader(name, load_steps=1, format=2)), *sections
-        )
-        self.load_steps = (
-            1 + len(self.get_ext_resources()) + len(self.get_sub_resources())
-        )
+        super().__init__(GDSection(GDSectionHeader(name)), *sections)
 
-    @property
-    def load_steps(self) -> int:
-        return self._sections[0].header["load_steps"]
+    def _output_to_string(self, output_format : OutputFormat) -> str:
+        header = self._sections[0].header
+        if "load_steps" in header:
+            del header["load_steps"]
+        if "format" in header:
+            del header["format"]
 
-    @load_steps.setter
-    def load_steps(self, steps: int):
-        self._sections[0].header["load_steps"] = steps
+        if output_format.load_steps:
+            header["load_steps"] = (
+                1 + len(self.get_ext_resources()) + len(self.get_sub_resources())
+            )
+
+        if output_format.resource_ids_as_strings:
+            header["format"] = 3
+        else:
+            header["format"] = 2
+
+        ret = super()._output_to_string(output_format)
+
+        return ret
 
     def add_section(self, new_section: GDSection) -> int:
         idx = super().add_section(new_section)
-        if new_section.header.name in ["ext_resource", "sub_resource"]:
-            self.load_steps += 1
         return idx
 
     def remove_at(self, index: int):
-        section = self._sections.pop(index)
-        if section.header.name in ["ext_resource", "sub_resource"]:
-            self.load_steps -= 1
+        self._sections.pop(index)
 
     def remove_unused_resources(self):
         self._remove_unused_resources(self.get_ext_resources(), ExtResource)
@@ -342,6 +347,9 @@ class GDResource(GDCommonFile):
         self.resource_section = GDResourceSection(**attributes)
         self.add_section(self.resource_section)
 
+    def __contains__(self, k: str) -> bool:
+        return k in self.resource_section
+
     def __getitem__(self, k: str) -> Any:
         return self.resource_section[k]
 
@@ -349,10 +357,7 @@ class GDResource(GDCommonFile):
         self.resource_section[k] = v
 
     def __delitem__(self, k: str) -> None:
-        try:
-            del self.resource_section[k]
-        except KeyError:
-            pass
+        del self.resource_section[k]
 
 
 class GDPackedScene(GDCommonFile):

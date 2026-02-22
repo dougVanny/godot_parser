@@ -1,8 +1,9 @@
 """Wrappers for Godot's non-primitive object types"""
 
 from functools import partial
-from typing import Type, TypeVar
+from typing import Type, TypeVar, Optional
 
+from .output import Outputable, OutputFormat
 from .util import stringify_object
 
 __all__ = [
@@ -38,7 +39,7 @@ class GDObjectMeta(type):
 GDObjectType = TypeVar("GDObjectType", bound="GDObject")
 
 
-class GDObject(metaclass=GDObjectMeta):
+class GDObject(Outputable, metaclass=GDObjectMeta):
     """
     Base class for all GD Object types
 
@@ -51,16 +52,27 @@ class GDObject(metaclass=GDObjectMeta):
         self.name = name
         self.args = list(args)
 
+    def __contains__(self, idx: int) -> bool:
+        return idx in self.args
+
+    def __getitem__(self, idx: int) -> float:
+        return self.args[idx]
+
+    def __setitem__(self, idx: int, value: float) -> None:
+        self.args[idx] = value
+
+    def __delitem__(self, idx: int) -> None:
+        del self.args[idx]
+
     @classmethod
     def from_parser(cls: Type[GDObjectType], parse_result) -> GDObjectType:
         name = parse_result[0]
         factory = GD_OBJECT_REGISTRY.get(name, partial(GDObject, name))
         return factory(*parse_result[1:])
 
-    def __str__(self) -> str:
-        return "%s(%s)" % (
-            self.name,
-            ", ".join([stringify_object(v) for v in self.args]),
+    def _output_to_string(self, output_format : OutputFormat) -> str:
+        return self.name + output_format.surround_parentheses(
+            ", ".join([stringify_object(v, output_format) for v in self.args])
         )
 
     def __repr__(self) -> str:
@@ -81,12 +93,6 @@ class GDObject(metaclass=GDObjectMeta):
 class Vector2(GDObject):
     def __init__(self, x: float, y: float) -> None:
         super().__init__("Vector2", x, y)
-
-    def __getitem__(self, idx) -> float:
-        return self.args[idx]
-
-    def __setitem__(self, idx: int, value: float):
-        self.args[idx] = value
 
     @property
     def x(self) -> float:
@@ -112,12 +118,6 @@ class Vector2(GDObject):
 class Vector3(GDObject):
     def __init__(self, x: float, y: float, z: float) -> None:
         super().__init__("Vector3", x, y, z)
-
-    def __getitem__(self, idx: int) -> float:
-        return self.args[idx]
-
-    def __setitem__(self, idx: int, value: float) -> None:
-        self.args[idx] = value
 
     @property
     def x(self) -> float:
@@ -157,12 +157,6 @@ class Color(GDObject):
         assert 0 <= b <= 1
         assert 0 <= a <= 1
         super().__init__("Color", r, g, b, a)
-
-    def __getitem__(self, idx: int) -> float:
-        return self.args[idx]
-
-    def __setitem__(self, idx: int, value: float) -> None:
-        self.args[idx] = value
 
     @property
     def r(self) -> float:
@@ -253,7 +247,7 @@ class SubResource(GDObject):
         self.args[0] = id
 
 
-class TypedArray():
+class TypedArray(Outputable):
     def __init__(self, type, list_) -> None:
         self.name = "Array"
         self.type = type
@@ -269,11 +263,11 @@ class TypedArray():
     def from_parser(cls: Type[TypedArray], parse_result) -> TypedArray:
         return TypedArray.WithCustomName(*parse_result)
 
-    def __str__(self) -> str:
-        return "%s[%s](%s)" % (
-            self.name,
-            self.type,
-            stringify_object(self.list_)
+    def _output_to_string(self, output_format : OutputFormat) -> str:
+        return (
+                self.name +
+                output_format.surround_brackets(self.type) +
+                output_format.surround_parentheses(stringify_object(self.list_, output_format))
         )
 
     def __repr__(self) -> str:
@@ -293,7 +287,7 @@ class TypedArray():
         return hash(frozenset((self.name,self.type,self.list_)))
 
 
-class TypedDictionary():
+class TypedDictionary(Outputable):
     def __init__(self, key_type, value_type, dict_) -> None:
         self.name = "Dictionary"
         self.key_type = key_type
@@ -310,12 +304,11 @@ class TypedDictionary():
     def from_parser(cls: Type[TypedDictionary], parse_result) -> TypedDictionary:
         return TypedDictionary.WithCustomName(*parse_result)
 
-    def __str__(self) -> str:
-        return "%s[%s, %s](%s)" % (
-            self.name,
-            self.key_type,
-            self.value_type,
-            stringify_object(self.dict_)
+    def _output_to_string(self, output_format : OutputFormat) -> str:
+        return (
+            self.name +
+            output_format.surround_brackets("%s, %s" % (self.key_type,self.value_type)) +
+            output_format.surround_parentheses(stringify_object(self.dict_, output_format))
         )
 
     def __repr__(self) -> str:
@@ -335,7 +328,7 @@ class TypedDictionary():
     def __hash__(self):
         return hash(frozenset((self.name,self.key_type,self.value_type,self.dict_)))
 
-class StringName():
+class StringName(Outputable):
     def __init__(self, str) -> None:
         self.str = str
 
@@ -343,8 +336,8 @@ class StringName():
     def from_parser(cls: Type[StringName], parse_result) -> StringName:
         return StringName(parse_result[0])
 
-    def __str__(self) -> str:
-        return "&" + stringify_object(self.str)
+    def _output_to_string(self, output_format : OutputFormat) -> str:
+        return "&" + stringify_object(self.str, output_format)
 
     def __repr__(self) -> str:
         return self.__str__()
