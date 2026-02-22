@@ -1,10 +1,10 @@
 """Wrappers for Godot's non-primitive object types"""
 
 from functools import partial
-from typing import Type, TypeVar, Optional
+from typing import Type, TypeVar, Union
 
 from .output import Outputable, OutputFormat
-from .util import stringify_object
+from .util import stringify_object, Identifiable
 
 __all__ = [
     "GDObject",
@@ -12,6 +12,7 @@ __all__ = [
     "Vector3",
     "Color",
     "NodePath",
+    "ResourceReference",
     "ExtResource",
     "SubResource",
     "StringName",
@@ -217,34 +218,42 @@ class NodePath(GDObject):
         return '%s("%s")' % (self.name, self.path)
 
 
-class ExtResource(GDObject):
-    def __init__(self, id: int) -> None:
-        super().__init__("ExtResource", id)
+class ResourceReference(GDObject):
+    def __init__(self, name:str, resource: Union[int, str, Identifiable]):
+        self.resource = resource
+        if isinstance(resource, Identifiable):
+            super().__init__(name)
+        else:
+            super().__init__(name, resource)
 
     @property
     def id(self) -> int:
         """Getter for id"""
-        return self.args[0]
+        if isinstance(self.resource, Identifiable):
+            return self.resource.get_id()
+        else:
+            return self.resource
 
     @id.setter
-    def id(self, id: int) -> None:
+    def id(self, id: Union[int, str]) -> None:
         """Setter for id"""
-        self.args[0] = id
+        self.resource = id
+        self.args = [id]
+
+    def _output_to_string(self, output_format : OutputFormat) -> str:
+        if isinstance(self.resource, Identifiable):
+            self.id = self.resource.get_id()
+        return super()._output_to_string(output_format)
 
 
-class SubResource(GDObject):
-    def __init__(self, id: int) -> None:
-        super().__init__("SubResource", id)
+class ExtResource(ResourceReference):
+    def __init__(self, resource: Union[int, str, Identifiable]) -> None:
+        super().__init__("ExtResource", resource)
 
-    @property
-    def id(self) -> int:
-        """Getter for id"""
-        return self.args[0]
 
-    @id.setter
-    def id(self, id: int) -> None:
-        """Setter for id"""
-        self.args[0] = id
+class SubResource(ResourceReference):
+    def __init__(self, resource: Union[int, str, Identifiable]) -> None:
+        super().__init__("SubResource", resource)
 
 
 class TypedArray(Outputable):

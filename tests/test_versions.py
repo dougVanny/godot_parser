@@ -1,6 +1,7 @@
 import unittest
 
-from godot_parser import GDResource, Vector3
+from godot_parser import GDResource, Vector3, ExtResource, GDExtResourceSection, GDSubResourceSection
+from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.output import VersionOutputFormat, OutputFormat
 
 
@@ -82,12 +83,18 @@ array = [ Vector3( 1, 2, 3 ) ]\n""")
         resource = GDResource()
         resource["toggle"] = True
 
-        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=False)),
+        true_output_format = OutputFormat(load_steps=True)
+        true_output_format._id_generator = SequentialHexGenerator()
+
+        false_output_format = OutputFormat(load_steps=False)
+        false_output_format._id_generator = SequentialHexGenerator()
+
+        self.assertEqual(resource.output_to_string(false_output_format),
                          """[gd_resource format=3]
 
 [resource]
 toggle = true\n""")
-        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=True)),
+        self.assertEqual(resource.output_to_string(true_output_format),
                          """[gd_resource load_steps=1 format=3]
 
 [resource]
@@ -95,38 +102,118 @@ toggle = true\n""")
 
         resource.add_ext_resource("res://a.tres", "CustomResource")
 
-        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=False)),
+        self.assertEqual(resource.output_to_string(false_output_format),
                          """[gd_resource format=3]
 
-[ext_resource path="res://a.tres" type="CustomResource" id=1]
+[ext_resource path="res://a.tres" type="CustomResource" id="1_1"]
 
 [resource]
 toggle = true\n""")
-        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=True)),
+        self.assertEqual(resource.output_to_string(true_output_format),
                          """[gd_resource load_steps=2 format=3]
 
-[ext_resource path="res://a.tres" type="CustomResource" id=1]
+[ext_resource path="res://a.tres" type="CustomResource" id="1_1"]
 
 [resource]
 toggle = true\n""")
 
         resource.add_sub_resource("CustomResource")
 
-        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=False)),
+        self.assertEqual(resource.output_to_string(false_output_format),
                          """[gd_resource format=3]
 
-[ext_resource path="res://a.tres" type="CustomResource" id=1]
+[ext_resource path="res://a.tres" type="CustomResource" id="1_1"]
 
-[sub_resource type="CustomResource" id=1]
+[sub_resource type="CustomResource" id="1_2"]
 
 [resource]
 toggle = true\n""")
-        self.assertEqual(resource.output_to_string(OutputFormat(load_steps=True)),
+        self.assertEqual(resource.output_to_string(true_output_format),
                          """[gd_resource load_steps=3 format=3]
 
+[ext_resource path="res://a.tres" type="CustomResource" id="1_1"]
+
+[sub_resource type="CustomResource" id="1_2"]
+
+[resource]
+toggle = true\n""")
+
+    def test_resource_ids_as_string(self):
+        resource = GDResource()
+        resource["toggle"] = True
+        resource.add_ext_resource("res://a.tres", "CustomResource")
+        resource.add_sub_resource("CustomResource")
+
+        false_output_format = OutputFormat(resource_ids_as_strings=False)
+
+        self.assertEqual(resource.output_to_string(false_output_format),
+                         """[gd_resource format=2]
+
 [ext_resource path="res://a.tres" type="CustomResource" id=1]
 
 [sub_resource type="CustomResource" id=1]
 
 [resource]
 toggle = true\n""")
+
+        resource = GDResource()
+        resource["toggle"] = True
+        resource.add_ext_resource("res://a.tres", "CustomResource")
+        resource.add_sub_resource("CustomResource")
+
+        true_output_format = OutputFormat(resource_ids_as_strings=True)
+        true_output_format._id_generator = SequentialHexGenerator()
+
+        self.assertEqual(resource.output_to_string(true_output_format),
+                         """[gd_resource format=3]
+
+[ext_resource path="res://a.tres" type="CustomResource" id="1_1"]
+
+[sub_resource type="CustomResource" id="1_2"]
+
+[resource]
+toggle = true\n""")
+
+    def test_resource_ids_as_string_migration(self):
+        resource = GDResource()
+        ext = GDExtResourceSection("res://a.tres", "CustomResource", 1)
+        sub = GDSubResourceSection("CustomResource", 1)
+
+        resource.add_section(ext)
+        resource.add_section(sub)
+
+        resource["ext"] = ext.reference
+        resource["sub"] = sub.reference
+
+        self.assertEqual(resource.output_to_string(OutputFormat(resource_ids_as_strings=False)),
+                         """[gd_resource format=2]
+
+[ext_resource path="res://a.tres" type="CustomResource" id=1]
+
+[sub_resource type="CustomResource" id=1]
+
+[resource]
+ext = ExtResource(1)
+sub = SubResource(1)\n""")
+
+        self.assertEqual(resource.output_to_string(OutputFormat(resource_ids_as_strings=True)),
+                         """[gd_resource format=3]
+
+[ext_resource path="res://a.tres" type="CustomResource" id="1"]
+
+[sub_resource type="CustomResource" id="1"]
+
+[resource]
+ext = ExtResource("1")
+sub = SubResource("1")\n""")
+
+        self.assertEqual(resource.output_to_string(OutputFormat(resource_ids_as_strings=False)),
+                         """[gd_resource format=2]
+
+[ext_resource path="res://a.tres" type="CustomResource" id=1]
+
+[sub_resource type="CustomResource" id=1]
+
+[resource]
+ext = ExtResource(1)
+sub = SubResource(1)\n""")

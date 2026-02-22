@@ -1,6 +1,9 @@
-from typing import Union, Tuple, Optional
+from typing import Union, Tuple, Optional, Any
 
 from packaging.version import Version
+
+from .id_generator import RandomIdGenerator
+
 
 class OutputFormat(object):
     def __init__(self,
@@ -16,6 +19,8 @@ class OutputFormat(object):
         self.packed_byte_array_base64_support = packed_byte_array_base64_support
         self.explicit_typed_dictionary = explicit_typed_dictionary
         self.load_steps = load_steps
+
+        self._id_generator = RandomIdGenerator()
 
     def surround_string(self, punctuation : Union[str, Tuple[str, str]], content : str) -> str:
         if punctuation is str:
@@ -35,6 +40,9 @@ class OutputFormat(object):
 
     def surround_brackets(self, content: str) -> str:
         return self.surround_string(("[","]"), content)
+
+    def generate_id(self, section : Any, index : int) -> str:
+        return self._id_generator.generate(section, index)
 
 class VersionOutputFormat(OutputFormat):
     __V40 = Version("4.0")

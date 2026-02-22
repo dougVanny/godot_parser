@@ -56,3 +56,7 @@ def filepath_to_gdpath(root: str, path: str) -> str:
 
 def is_gd_path(path: str) -> bool:
     return path.startswith("res://")
+
+class Identifiable(object):
+    def get_id(self):
+        return self.id

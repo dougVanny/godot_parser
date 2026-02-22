@@ -1,4 +1,5 @@
 import os
+import re
 from contextlib import contextmanager
 from typing import (
     Iterable,
@@ -13,13 +14,14 @@ from typing import (
     Any,
 )
 
-from .objects import ExtResource, GDObject, SubResource
+from .objects import ExtResource, GDObject, SubResource, ResourceReference
 from .output import OutputFormat, Outputable
 from .sections import (
-    GDExtResourceSection,
     GDNodeSection,
     GDSection,
     GDSectionHeader,
+    GDBaseResourceSection,
+    GDExtResourceSection,
     GDSubResourceSection,
     GDResourceSection,
 )
@@ -167,15 +169,13 @@ class GDFile(Outputable):
 
     def add_ext_resource(self, path: str, type: str) -> GDExtResourceSection:
         """Add an ext_resource"""
-        next_id = 1 + max([s.id for s in self.get_ext_resources()] + [0])
-        section = GDExtResourceSection(path, type, next_id)
+        section = GDExtResourceSection(path, type)
         self.add_section(section)
         return section
 
     def add_sub_resource(self, type: str, **kwargs) -> GDSubResourceSection:
         """Add a sub_resource"""
-        next_id = 1 + max([s.id for s in self.get_sub_resources()] + [0])
-        section = GDSubResourceSection(type, next_id, **kwargs)
+        section = GDSubResourceSection(type, **kwargs)
         self.add_section(section)
         return section
 
@@ -210,11 +210,11 @@ class GDFile(Outputable):
             return resource
         return cls(*parse_result)
 
-    def write(self, filename: str):
+    def write(self, filename: str, output_format : Optional[OutputFormat] = None):
         """Writes this to a file"""
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, "w", encoding="utf-8") as ofile:
-            ofile.write(str(self))
+            ofile.write(self.output_to_string(output_format))
 
     def _output_to_string(self, output_format : OutputFormat) -> str:
         return "\n\n".join([s.output_to_string(output_format) for s in self._sections]) + "\n"
@@ -238,6 +238,8 @@ class GDCommonFile(GDFile):
         super().__init__(GDSection(GDSectionHeader(name)), *sections)
 
     def _output_to_string(self, output_format : OutputFormat) -> str:
+        self.generate_resource_ids(output_format)
+
         header = self._sections[0].header
         if "load_steps" in header:
             del header["load_steps"]
@@ -287,11 +289,6 @@ class GDCommonFile(GDFile):
                     if self.remove_section(s):
                         done_removing = False
 
-    def renumber_resource_ids(self):
-        """Refactor all resource IDs to be sequential with no gaps"""
-        self._renumber_resource_ids(self.get_ext_resources(), ExtResource)
-        self._renumber_resource_ids(self.get_sub_resources(), SubResource)
-
     def _iter_resource_references(
         self,
     ) -> Iterator[Union[ExtResource, SubResource]]:
@@ -317,6 +314,54 @@ class GDCommonFile(GDFile):
         for resource in self.get_sections("resource"):
             yield resource.properties
 
+    def generate_resource_ids(self, output_format : Optional[OutputFormat] = OutputFormat()):
+        self._generate_resource_ids(self.get_ext_resources(), ExtResource, output_format)
+        self._generate_resource_ids(self.get_sub_resources(), SubResource, output_format)
+
+    __extract_int_re = re.compile(r"^(\d+)")
+    def __extract_int_id(self, id_: Union[int, str, None]) -> Optional[int]:
+        if isinstance(id_, int) or id_ is None:
+            return id_
+        match = self.__extract_int_re.match(id_)
+        if match:
+            return int(match.group(0))
+        return None
+
+    def _generate_resource_ids(self,
+                               sections: Sequence[GDBaseResourceSection],
+                               reference_type: Type[ResourceReference],
+                               output_format : OutputFormat):
+        if output_format.resource_ids_as_strings:
+            ids = [self.__extract_int_id(s.id) for s in sections]
+            ids.append(1)
+            next_id = max([id for id in ids if id is not None])
+            for section in sections:
+                if isinstance(section.id,int):
+                    for ref in self._iter_resource_references():
+                        if isinstance(ref, reference_type) and ref.id == section.id:
+                            ref.resource = section
+                    section.id = str(section.id)
+                elif section.id is None:
+                    section.id = output_format.generate_id(section, next_id)
+                    next_id+=1
+        else:
+            ids = [s.id for s in sections if isinstance(s.id,int)]
+            ids.append(1)
+            next_id = max(ids)
+            for section in sections:
+                if not isinstance(section.id,int):
+                    if isinstance(section.id, str):
+                        for ref in self._iter_resource_references():
+                            if isinstance(ref, reference_type) and ref.id == section.id:
+                                ref.resource = section
+                    section.id = next_id
+                    next_id+=1
+
+    def renumber_resource_ids(self):
+        """Refactor all resource IDs to be sequential with no gaps"""
+        self._renumber_resource_ids(self.get_ext_resources(), ExtResource)
+        self._renumber_resource_ids(self.get_sub_resources(), SubResource)
+
     def _renumber_resource_ids(
         self,
         sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
@@ -324,17 +369,15 @@ class GDCommonFile(GDFile):
     ) -> None:
         id_map = {}
         # First we renumber all the resource IDs so there are no gaps
-        for i, section in enumerate(sections):
+        for i, section in enumerate([s for s in sections if isinstance(s.id,int)]):
             id_map[section.id] = i + 1
             section.id = i + 1
 
         # Now we update all references to use the new number
         for ref in self._iter_resource_references():
             if isinstance(ref, reference_type):
-                try:
+                if ref.id in id_map:
                     ref.id = id_map[ref.id]
-                except KeyError as e:
-                    raise GodotFileException("Unknown resource ID %d" % ref.id) from e
 
 
 class GDResource(GDCommonFile):
@@ -445,7 +488,7 @@ class GDPackedScene(GDCommonFile):
         parent_res = self.find_ext_resource(id=root.instance)
         if parent_res is None:
             raise RuntimeError(
-                "Could not find parent scene resource id(%d)" % root.instance
+                "Could not find parent scene resource id(%s)" % root.instance
             )
         return GDPackedScene.load(gdpath_to_filepath(self.project_root, parent_res.path))
 

@@ -1,15 +1,16 @@
 import re
 from collections import OrderedDict
-from typing import Any, List, Optional, Type, TypeVar
+from typing import Any, List, Optional, Type, TypeVar, Union
 
 from .objects import ExtResource, SubResource
 from .output import OutputFormat, Outputable
-from .util import stringify_object
+from .util import stringify_object, Identifiable
 
 __all__ = [
     "GDSectionHeader",
     "GDSection",
     "GDNodeSection",
+    "GDBaseResourceSection",
     "GDExtResourceSection",
     "GDSubResourceSection",
     "GDResourceSection",
@@ -156,11 +157,31 @@ class GDSection(Outputable, metaclass=GDSectionMeta):
         return not self.__eq__(other)
 
 
-class GDExtResourceSection(GDSection):
+class GDBaseResourceSection(GDSection, Identifiable):
+    @property
+    def type(self) -> str:
+        return self.header["type"]
+
+    @type.setter
+    def type(self, type: str) -> None:
+        self.header["type"] = type
+
+    @property
+    def id(self) -> Optional[Union[int,str]]:
+        if "id" in self.header:
+            return self.header["id"]
+        return None
+
+    @id.setter
+    def id(self, id: Union[int,str]) -> None:
+        self.header["id"] = id
+
+
+class GDExtResourceSection(GDBaseResourceSection):
     """Section representing an [ext_resource]"""
 
-    def __init__(self, path: str, type: str, id: int):
-        super().__init__(GDSectionHeader("ext_resource", path=path, type=type, id=id))
+    def __init__(self, path: str, type_: str, id_: Optional[Union[int,str]] = None):
+        super().__init__(GDSectionHeader("ext_resource", path=path, type=type_, id=id_))
 
     @property
     def path(self) -> str:
@@ -171,51 +192,19 @@ class GDExtResourceSection(GDSection):
         self.header["path"] = path
 
     @property
-    def type(self) -> str:
-        return self.header["type"]
-
-    @type.setter
-    def type(self, type: str) -> None:
-        self.header["type"] = type
-
-    @property
-    def id(self) -> int:
-        return self.header["id"]
-
-    @id.setter
-    def id(self, id: int) -> None:
-        self.header["id"] = id
-
-    @property
     def reference(self) -> ExtResource:
-        return ExtResource(self.id)
+        return ExtResource(self)
 
 
-class GDSubResourceSection(GDSection):
+class GDSubResourceSection(GDBaseResourceSection):
     """Section representing a [sub_resource]"""
 
-    def __init__(self, type: str, id: int, **kwargs):
-        super().__init__(GDSectionHeader("sub_resource", type=type, id=id), **kwargs)
-
-    @property
-    def type(self) -> str:
-        return self.header["type"]
-
-    @type.setter
-    def type(self, type: str) -> None:
-        self.header["type"] = type
-
-    @property
-    def id(self) -> int:
-        return self.header["id"]
-
-    @id.setter
-    def id(self, id: int) -> None:
-        self.header["id"] = id
+    def __init__(self, type_: str, id_: Optional[Union[int,str]] = None, **kwargs):
+        super().__init__(GDSectionHeader("sub_resource", type=type_, id=id_), **kwargs)
 
     @property
     def reference(self) -> SubResource:
-        return SubResource(self.id)
+        return SubResource(self)
 
 
 class GDNodeSection(GDSection):

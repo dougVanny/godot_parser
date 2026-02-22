@@ -2,10 +2,15 @@ import tempfile
 import unittest
 
 from godot_parser import GDFile, GDObject, GDResource, GDResourceSection, GDPackedScene, Node, SubResource
+from godot_parser.id_generator import SequentialHexGenerator
+from godot_parser.output import OutputFormat
 
 
 class TestGDFile(unittest.TestCase):
     """Tests for GDFile"""
+    def setUp(self):
+        self.test_output_format = OutputFormat()
+        self.test_output_format._id_generator = SequentialHexGenerator()
 
     def test_basic_scene(self):
         """Run the parsing test cases"""
@@ -38,10 +43,10 @@ escaped = "foo(\\"bar\\")"
         scene = GDPackedScene()
         scene.add_ext_resource("res://Other.tscn", "PackedScene")
         self.assertEqual(
-            str(scene),
+            scene.output_to_string(self.test_output_format),
             """[gd_scene format=3]
 
-[ext_resource path="res://Other.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Other.tscn" type="PackedScene" id="1_1"]
 """,
         )
 
@@ -50,10 +55,10 @@ escaped = "foo(\\"bar\\")"
         scene = GDPackedScene()
         scene.add_sub_resource("Animation")
         self.assertEqual(
-            str(scene),
+            scene.output_to_string(self.test_output_format),
             """[gd_scene format=3]
 
-[sub_resource type="Animation" id=1]
+[sub_resource type="Animation" id="1_1"]
 """,
         )
 
@@ -160,9 +165,10 @@ visible = false
         """Test adding and removing an ext_resource"""
         scene = GDPackedScene()
         res = scene.add_ext_resource("res://Res.tscn", "PackedScene")
-        self.assertEqual(res.id, 1)
         res2 = scene.add_ext_resource("res://Sprite.png", "Texture")
-        self.assertEqual(res2.id, 2)
+        scene.generate_resource_ids(self.test_output_format)
+        self.assertEqual(res.id, "1_1")
+        self.assertEqual(res2.id, "2_2")
         node = scene.add_node("Sprite", "Sprite")
         node["texture"] = res2.reference
         node["textures"] = [res2.reference]
@@ -171,10 +177,9 @@ visible = false
 
         s = scene.find_section(path="res://Res.tscn")
         scene.remove_section(s)
-        scene.renumber_resource_ids()
 
         s = scene.find_section("ext_resource")
-        self.assertEqual(s.id, 1)
+        self.assertEqual(s.id, "2_2")
         self.assertEqual(node["texture"], s.reference)
         self.assertEqual(node["textures"][0], s.reference)
         self.assertEqual(node["texture_map"]["tex"], s.reference)
@@ -192,31 +197,33 @@ visible = false
         """Test adding and removing a sub_resource"""
         scene = GDResource()
         res = scene.add_sub_resource("CircleShape2D")
-        self.assertEqual(res.id, 1)
         res2 = scene.add_sub_resource("AnimationNodeAnimation")
-        self.assertEqual(res2.id, 2)
+        scene.generate_resource_ids(self.test_output_format)
+        self.assertEqual(res.id, "1_1")
+        self.assertEqual(res2.id, "2_2")
         resource = GDResourceSection(shape=res2.reference)
         scene.add_section(resource)
 
         s = scene.find_sub_resource(type="CircleShape2D")
         scene.remove_section(s)
-        scene.renumber_resource_ids()
 
         s = scene.find_section("sub_resource")
-        self.assertEqual(s.id, 1)
+        self.assertEqual(s.id, "2_2")
         self.assertEqual(resource["shape"], s.reference)
 
     def test_remove_unused_nested(self):
         res = GDResource("CustomResource")
 
         res1 = res.add_sub_resource("CustomResource")
-        res["child_resource"] = SubResource(1)
+        res["child_resource"] = res1.reference
 
         res2 = res.add_sub_resource("CustomResource")
-        res1["child_resource"] = SubResource(2)
+        res1["child_resource"] = res2.reference
 
         res3 = res.add_sub_resource("CustomResource")
-        res2["child_resource"] = SubResource(3)
+        res2["child_resource"] = res3.reference
+
+        res.generate_resource_ids(self.test_output_format)
 
         self.assertEqual(len(res._sections), 5)
         self.assertIn(res1, res._sections)
@@ -236,6 +243,7 @@ visible = false
         scene = GDPackedScene()
         res1 = scene.add_sub_resource("CircleShape2D", radius=1)
         res2 = scene.add_sub_resource("CircleShape2D", radius=2)
+        scene.generate_resource_ids()
 
         found = list(scene.find_all("sub_resource"))
         self.assertCountEqual(found, [res1, res2])
@@ -264,6 +272,23 @@ visible = false
         resource = s1.find_section("resource")
         resource["key"] = "value"
         self.assertNotEqual(s1, s2)
+
+    def test_renumber_ids(self):
+        output_format = OutputFormat(resource_ids_as_strings=False)
+
+        res = GDResource()
+        res1 = res.add_sub_resource("CircleShape2D")
+        res2 = res.add_sub_resource("AnimationNodeAnimation")
+        res.generate_resource_ids(output_format)
+
+        self.assertEqual(res1.id, 1)
+        self.assertEqual(res2.id, 2)
+
+        res.remove_section(res1)
+        res.renumber_resource_ids()
+
+        self.assertEqual(res2.id, 1)
+
 
 class Godot4Test(unittest.TestCase):
     def test_string_special_characters(self):
