@@ -253,6 +253,8 @@ class SubResource(GDObject):
         self.args[0] = id
 
 
+TypedArrayType = TypeVar("TypedArrayType", bound="TypedArray")
+
 class TypedArray():
     def __init__(self, type, list_) -> None:
         self.name = "Array"
@@ -260,13 +262,13 @@ class TypedArray():
         self.list_ = list_
 
     @classmethod
-    def WithCustomName(cls: Type[TypedArray], name, type, list_) -> TypedArray:
+    def WithCustomName(cls: Type[TypedArrayType], name, type, list_) -> TypedArrayType:
         custom_array = TypedArray(type, list_)
         custom_array.name = name
         return custom_array
 
     @classmethod
-    def from_parser(cls: Type[TypedArray], parse_result) -> TypedArray:
+    def from_parser(cls: Type[TypedArrayType], parse_result) -> TypedArrayType:
         return TypedArray.WithCustomName(*parse_result)
 
     def __str__(self) -> str:
@@ -293,6 +295,8 @@ class TypedArray():
         return hash(frozenset((self.name,self.type,self.list_)))
 
 
+TypedDictionaryType = TypeVar("TypedDictionaryType", bound="TypedDictionary")
+
 class TypedDictionary():
     def __init__(self, key_type, value_type, dict_) -> None:
         self.name = "Dictionary"
@@ -301,13 +305,13 @@ class TypedDictionary():
         self.dict_ = dict_
 
     @classmethod
-    def WithCustomName(cls: Type[TypedDictionary], name, key_type, value_type, dict_) -> TypedDictionary:
+    def WithCustomName(cls: Type[TypedDictionaryType], name, key_type, value_type, dict_) -> TypedDictionaryType:
         custom_dict = TypedDictionary(key_type, value_type, dict_)
         custom_dict.name = name
         return custom_dict
 
     @classmethod
-    def from_parser(cls: Type[TypedDictionary], parse_result) -> TypedDictionary:
+    def from_parser(cls: Type[TypedDictionaryType], parse_result) -> TypedDictionaryType:
         return TypedDictionary.WithCustomName(*parse_result)
 
     def __str__(self) -> str:
@@ -335,12 +339,14 @@ class TypedDictionary():
     def __hash__(self):
         return hash(frozenset((self.name,self.key_type,self.value_type,self.dict_)))
 
+StringNameType = TypeVar("StringNameType", bound="StringName")
+
 class StringName():
     def __init__(self, str) -> None:
         self.str = str
 
     @classmethod
-    def from_parser(cls: Type[StringName], parse_result) -> StringName:
+    def from_parser(cls: Type[StringNameType], parse_result) -> StringNameType:
         return StringName(parse_result[0])
 
     def __str__(self) -> str:
