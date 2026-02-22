@@ -231,4 +231,5 @@ class TestParser(unittest.TestCase):
     def test_cases(self):
         """Run the parsing test cases"""
         for string, expected in TEST_CASES:
-            self._run_test(string, expected)
+            with self.subTest(string):
+                self._run_test(string, expected)
