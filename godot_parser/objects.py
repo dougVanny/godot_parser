@@ -4,7 +4,7 @@ from functools import partial
 from typing import Type, TypeVar, Union
 
 from .output import Outputable, OutputFormat
-from .util import stringify_object, Identifiable
+from .util import Identifiable, stringify_object
 
 __all__ = [
     "GDObject",
@@ -71,7 +71,7 @@ class GDObject(Outputable, metaclass=GDObjectMeta):
         factory = GD_OBJECT_REGISTRY.get(name, partial(GDObject, name))
         return factory(*parse_result[1:])
 
-    def _output_to_string(self, output_format : OutputFormat) -> str:
+    def _output_to_string(self, output_format: OutputFormat) -> str:
         return self.name + output_format.surround_parentheses(
             ", ".join([stringify_object(v, output_format) for v in self.args])
         )
@@ -88,7 +88,7 @@ class GDObject(Outputable, metaclass=GDObjectMeta):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(frozenset((self.name,*self.args)))
+        return hash(frozenset((self.name, *self.args)))
 
 
 class Vector2(GDObject):
@@ -219,7 +219,7 @@ class NodePath(GDObject):
 
 
 class ResourceReference(GDObject):
-    def __init__(self, name:str, resource: Union[int, str, Identifiable]):
+    def __init__(self, name: str, resource: Union[int, str, Identifiable]):
         self.resource = resource
         if isinstance(resource, Identifiable):
             super().__init__(name)
@@ -240,7 +240,7 @@ class ResourceReference(GDObject):
         self.resource = id
         self.args = [id]
 
-    def _output_to_string(self, output_format : OutputFormat) -> str:
+    def _output_to_string(self, output_format: OutputFormat) -> str:
         if isinstance(self.resource, Identifiable):
             self.id = self.resource.get_id()
         return super()._output_to_string(output_format)
@@ -272,11 +272,13 @@ class TypedArray(Outputable):
     def from_parser(cls: Type[TypedArray], parse_result) -> TypedArray:
         return TypedArray.WithCustomName(*parse_result)
 
-    def _output_to_string(self, output_format : OutputFormat) -> str:
+    def _output_to_string(self, output_format: OutputFormat) -> str:
         return (
-                self.name +
-                output_format.surround_brackets(self.type) +
-                output_format.surround_parentheses(stringify_object(self.list_, output_format))
+            self.name
+            + output_format.surround_brackets(self.type)
+            + output_format.surround_parentheses(
+                stringify_object(self.list_, output_format)
+            )
         )
 
     def __repr__(self) -> str:
@@ -285,15 +287,17 @@ class TypedArray(Outputable):
     def __eq__(self, other) -> bool:
         if not isinstance(other, TypedArray):
             return False
-        return self.name == other.name and \
-            self.type == other.type and \
-            self.list_ == other.list_
+        return (
+            self.name == other.name
+            and self.type == other.type
+            and self.list_ == other.list_
+        )
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(frozenset((self.name,self.type,self.list_)))
+        return hash(frozenset((self.name, self.type, self.list_)))
 
 
 class TypedDictionary(Outputable):
@@ -304,7 +308,9 @@ class TypedDictionary(Outputable):
         self.dict_ = dict_
 
     @classmethod
-    def WithCustomName(cls: Type[TypedDictionary], name, key_type, value_type, dict_) -> TypedDictionary:
+    def WithCustomName(
+        cls: Type[TypedDictionary], name, key_type, value_type, dict_
+    ) -> TypedDictionary:
         custom_dict = TypedDictionary(key_type, value_type, dict_)
         custom_dict.name = name
         return custom_dict
@@ -313,11 +319,15 @@ class TypedDictionary(Outputable):
     def from_parser(cls: Type[TypedDictionary], parse_result) -> TypedDictionary:
         return TypedDictionary.WithCustomName(*parse_result)
 
-    def _output_to_string(self, output_format : OutputFormat) -> str:
+    def _output_to_string(self, output_format: OutputFormat) -> str:
         return (
-            self.name +
-            output_format.surround_brackets("%s, %s" % (self.key_type,self.value_type)) +
-            output_format.surround_parentheses(stringify_object(self.dict_, output_format))
+            self.name
+            + output_format.surround_brackets(
+                "%s, %s" % (self.key_type, self.value_type)
+            )
+            + output_format.surround_parentheses(
+                stringify_object(self.dict_, output_format)
+            )
         )
 
     def __repr__(self) -> str:
@@ -326,16 +336,19 @@ class TypedDictionary(Outputable):
     def __eq__(self, other) -> bool:
         if not isinstance(other, TypedDictionary):
             return False
-        return self.name == other.name and \
-            self.key_type == other.key_type and \
-            self.value_type == other.value_type and \
-            self.dict_ == other.dict_
+        return (
+            self.name == other.name
+            and self.key_type == other.key_type
+            and self.value_type == other.value_type
+            and self.dict_ == other.dict_
+        )
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(frozenset((self.name,self.key_type,self.value_type,self.dict_)))
+        return hash(frozenset((self.name, self.key_type, self.value_type, self.dict_)))
+
 
 class StringName(Outputable):
     def __init__(self, str) -> None:
@@ -345,7 +358,7 @@ class StringName(Outputable):
     def from_parser(cls: Type[StringName], parse_result) -> StringName:
         return StringName(parse_result[0])
 
-    def _output_to_string(self, output_format : OutputFormat) -> str:
+    def _output_to_string(self, output_format: OutputFormat) -> str:
         return "&" + stringify_object(self.str, output_format)
 
     def __repr__(self) -> str:

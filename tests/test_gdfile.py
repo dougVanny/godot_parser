@@ -1,13 +1,22 @@
 import tempfile
 import unittest
 
-from godot_parser import GDFile, GDObject, GDResource, GDResourceSection, GDPackedScene, Node, SubResource
+from godot_parser import (
+    GDFile,
+    GDObject,
+    GDPackedScene,
+    GDResource,
+    GDResourceSection,
+    Node,
+    SubResource,
+)
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.output import OutputFormat
 
 
 class TestGDFile(unittest.TestCase):
     """Tests for GDFile"""
+
     def setUp(self):
         self.test_output_format = OutputFormat()
         self.test_output_format._id_generator = SequentialHexGenerator()
@@ -298,11 +307,14 @@ class Godot4Test(unittest.TestCase):
         Tab handling is done by calling parse_with_tabs before parse_string
         For this reason, this test is being done at a GDFile level, where this method is called upon parsing
         """
-        res = GDResource(str_value = "\ta\"q\'é'd\"\n\n\\")
-        self.assertEqual(str(res), """[gd_resource format=3]
+        res = GDResource(str_value="\ta\"q'é'd\"\n\n\\")
+        self.assertEqual(
+            str(res),
+            """[gd_resource format=3]
 
 [resource]
 str_value = "	a\\"q'é'd\\"
 
 \\\\"
-""")
+""",
+        )

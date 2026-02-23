@@ -7,13 +7,18 @@ class BaseGenerator(object):
     def generate(self, section: Any, index: int):
         return ""
 
+
 class RandomIdGenerator(BaseGenerator):
-    def __init__(self, length: int = 5, pool : str = ascii_lowercase+digits):
+    def __init__(self, length: int = 5, pool: str = ascii_lowercase + digits):
         self.length = length
         self.pool = pool
 
     def generate(self, section: Any, index: int):
-        return "%s_%s" % (index, "".join((choice(self.pool) for _ in range(self.length))))
+        return "%s_%s" % (
+            index,
+            "".join((choice(self.pool) for _ in range(self.length))),
+        )
+
 
 class SequentialHexGenerator(BaseGenerator):
     def __init__(self):

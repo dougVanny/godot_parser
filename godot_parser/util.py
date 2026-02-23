@@ -3,27 +3,36 @@
 import os
 from typing import Optional
 
-from godot_parser.output import OutputFormat, Outputable
+from godot_parser.output import Outputable, OutputFormat
 
 
-def stringify_object(value, output_format : Optional[OutputFormat] = OutputFormat()):
+def stringify_object(value, output_format: Optional[OutputFormat] = OutputFormat()):
     """Serialize a value to the godot file format"""
     if value is None:
         return "null"
     elif isinstance(value, str):
-        return "\"%s\"" % value.replace("\\","\\\\").replace("\"", "\\\"")
+        return '"%s"' % value.replace("\\", "\\\\").replace('"', '\\"')
     elif isinstance(value, bool):
         return "true" if value else "false"
     elif isinstance(value, dict):
         return (
             "{\n"
             + ",\n".join(
-                ['%s: %s' % (stringify_object(k, output_format), stringify_object(v, output_format)) for k, v in value.items()]
+                [
+                    "%s: %s"
+                    % (
+                        stringify_object(k, output_format),
+                        stringify_object(v, output_format),
+                    )
+                    for k, v in value.items()
+                ]
             )
             + "\n}"
         )
     elif isinstance(value, list):
-        return output_format.surround_brackets(", ".join([stringify_object(v, output_format) for v in value]))
+        return output_format.surround_brackets(
+            ", ".join([stringify_object(v, output_format) for v in value])
+        )
     elif isinstance(value, Outputable):
         return value.output_to_string(output_format)
     else:
@@ -56,6 +65,7 @@ def filepath_to_gdpath(root: str, path: str) -> str:
 
 def is_gd_path(path: str) -> bool:
     return path.startswith("res://")
+
 
 class Identifiable(object):
     def get_id(self):

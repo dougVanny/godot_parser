@@ -3,8 +3,8 @@ from collections import OrderedDict
 from typing import Any, List, Optional, Type, TypeVar, Union
 
 from .objects import ExtResource, SubResource
-from .output import OutputFormat, Outputable
-from .util import stringify_object, Identifiable
+from .output import Outputable, OutputFormat
+from .util import Identifiable, stringify_object
 
 __all__ = [
     "GDSectionHeader",
@@ -57,11 +57,14 @@ class GDSectionHeader(Outputable):
             header.attributes[attribute[0]] = attribute[1]
         return header
 
-    def _output_to_string(self, output_format : OutputFormat) -> str:
+    def _output_to_string(self, output_format: OutputFormat) -> str:
         attribute_str = ""
         if self.attributes:
             attribute_str = " " + " ".join(
-                ["%s=%s" % (k, stringify_object(v, output_format)) for k, v in self.attributes.items()]
+                [
+                    "%s=%s" % (k, stringify_object(v, output_format))
+                    for k, v in self.attributes.items()
+                ]
             )
         return "[" + self.name + attribute_str + "]"
 
@@ -134,12 +137,16 @@ class GDSection(Outputable, metaclass=GDSectionMeta):
             section[k] = v
         return section
 
-    def _output_to_string(self, output_format : OutputFormat) -> str:
+    def _output_to_string(self, output_format: OutputFormat) -> str:
         ret = self.header.output_to_string(output_format)
         if self.properties:
             ret += "\n" + "\n".join(
                 [
-                    "%s = %s" % ("\"" + k + "\"" if ' ' in k else k, stringify_object(v, output_format))
+                    "%s = %s"
+                    % (
+                        '"' + k + '"' if " " in k else k,
+                        stringify_object(v, output_format),
+                    )
                     for k, v in self.properties.items()
                 ]
             )
@@ -167,20 +174,20 @@ class GDBaseResourceSection(GDSection, Identifiable):
         self.header["type"] = type
 
     @property
-    def id(self) -> Optional[Union[int,str]]:
+    def id(self) -> Optional[Union[int, str]]:
         if "id" in self.header:
             return self.header["id"]
         return None
 
     @id.setter
-    def id(self, id: Union[int,str]) -> None:
+    def id(self, id: Union[int, str]) -> None:
         self.header["id"] = id
 
 
 class GDExtResourceSection(GDBaseResourceSection):
     """Section representing an [ext_resource]"""
 
-    def __init__(self, path: str, type_: str, id_: Optional[Union[int,str]] = None):
+    def __init__(self, path: str, type_: str, id_: Optional[Union[int, str]] = None):
         super().__init__(GDSectionHeader("ext_resource", path=path, type=type_, id=id_))
 
     @property
@@ -199,7 +206,7 @@ class GDExtResourceSection(GDBaseResourceSection):
 class GDSubResourceSection(GDBaseResourceSection):
     """Section representing a [sub_resource]"""
 
-    def __init__(self, type_: str, id_: Optional[Union[int,str]] = None, **kwargs):
+    def __init__(self, type_: str, id_: Optional[Union[int, str]] = None, **kwargs):
         super().__init__(GDSectionHeader("sub_resource", type=type_, id=id_), **kwargs)
 
     @property

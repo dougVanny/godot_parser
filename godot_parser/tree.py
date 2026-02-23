@@ -120,7 +120,11 @@ class Node(object):
         raise KeyError("No property %s found on node %s" % (k, self.name))
 
     def __setitem__(self, k: str, v: Any) -> None:
-        if self._inherited_node is not None and k in self._inherited_node and v == self._inherited_node[k]:
+        if (
+            self._inherited_node is not None
+            and k in self._inherited_node
+            and v == self._inherited_node[k]
+        ):
             del self[k]
         else:
             self.properties[k] = v
