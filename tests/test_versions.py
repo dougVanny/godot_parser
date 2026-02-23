@@ -266,7 +266,14 @@ class TestRealProject(unittest.TestCase):
 
                     with open(filepath, "r", encoding="utf-8") as input_file:
                         file_content = input_file.read()
+                        parsed_file = parse(file_content)
                         self.assertEqual(
                             file_content,
-                            parse(file_content).output_to_string(output_format),
+                            parsed_file.output_to_string(output_format),
+                        )
+                        self.assertEqual(
+                            file_content,
+                            parsed_file.output_to_string(
+                                VersionOutputFormat.guess_version(parsed_file)
+                            ),
                         )

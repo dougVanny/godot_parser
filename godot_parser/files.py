@@ -12,7 +12,7 @@ from .objects import (
     ResourceReference,
     SubResource,
 )
-from .output import Outputable, OutputFormat
+from .output import Outputable, OutputFormat, VersionOutputFormat
 from .sections import (
     GDBaseResourceSection,
     GDExtResourceSection,
@@ -249,6 +249,11 @@ class GDCommonFile(GDFile):
     def __init__(self, name: str, *sections: GDSection) -> None:
         super().__init__(GDSection(GDFileHeader(name)), *sections)
 
+    def output_to_string(self, output_format: Optional[OutputFormat] = None) -> str:
+        if output_format is None:
+            output_format = VersionOutputFormat.guess_version(self)
+        return super().output_to_string(output_format)
+
     def _output_to_string(self, output_format: OutputFormat) -> str:
         self.generate_resource_ids(output_format)
 
@@ -321,8 +326,13 @@ class GDCommonFile(GDFile):
         self,
     ) -> Iterator[Union[ExtResource, SubResource]]:
         def iter_resources(value):
-            if isinstance(value, (ExtResource, SubResource)):
+            if isinstance(value, ExtResource):
                 yield value
+            elif isinstance(value, SubResource):
+                yield value
+                sub_resource = self.find_sub_resource(id=value.id)
+                if sub_resource is not None:
+                    yield from iter_resources(sub_resource.properties)
             elif isinstance(value, list):
                 for v in value:
                     yield from iter_resources(v)

@@ -8,6 +8,7 @@ import sys
 import traceback
 
 from godot_parser import parse
+from godot_parser.output import VersionOutputFormat
 
 # Regex to detect space sequences
 space_re = re.compile(r" +")
@@ -81,7 +82,9 @@ def _parse_and_test_file(filename: str, verbose: bool, unescape: bool) -> bool:
     with open(filename, "r", encoding="utf-8") as ifile:
         original_file = ifile.read()
     try:
-        parsed_file = str(parse(original_file))
+        parsed_file = parse(original_file)
+        output_format = VersionOutputFormat.guess_version(parsed_file)
+        parsed_file = parsed_file.output_to_string(output_format)
     except Exception:
         print("! Parsing error on %s" % filename, file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
@@ -107,6 +110,7 @@ def _parse_and_test_file(filename: str, verbose: bool, unescape: bool) -> bool:
         return True
 
     print("! Difference detected on %s" % filename)
+    print("  Version detected: %s" % output_format.version)
     sys.stdout.writelines(diff)
     return False
 

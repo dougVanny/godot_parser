@@ -305,12 +305,12 @@ class PackedByteArray(GDObject):
     def FromBytes(cls, bytes_: bytes) -> "PackedByteArray":
         return cls(*list(bytes_))
 
-    def __stored_as_base64(self) -> bool:
+    def _stored_as_base64(self) -> bool:
         return len(self.args) == 1 and isinstance(self.args[0], str)
 
     @property
     def bytes_(self) -> bytes:
-        if self.__stored_as_base64():
+        if self._stored_as_base64():
             return base64.b64decode(self.args[0])
         return bytes(self.args)
 
@@ -320,9 +320,9 @@ class PackedByteArray(GDObject):
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
         if output_format.packed_byte_array_base64_support:
-            if not self.__stored_as_base64():
+            if not self._stored_as_base64():
                 self.args = [base64.b64encode(self.bytes_).decode("utf-8")]
-        elif self.__stored_as_base64():
+        elif self._stored_as_base64():
             self.bytes_ = self.bytes_
         return super()._output_to_string(output_format)
 

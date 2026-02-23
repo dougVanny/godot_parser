@@ -222,7 +222,7 @@ flip_h = true
         """Inherited nodes inherit properties"""
         scene = GDPackedScene.load(self.leaf_scene)
         with scene.use_tree() as tree:
-            self.assertEqual(tree.root["shape"], SubResource("1"))
+            self.assertEqual(tree.root["shape"], SubResource(1))
             self.assertEqual(tree.root["collision_layer"], 4)
             self.assertEqual(tree.root.get("collision_layer"), 4)
             self.assertEqual(tree.root.get("missing"), None)

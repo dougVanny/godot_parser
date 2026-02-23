@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union, Type
 
 from packaging.version import Version
 
@@ -59,6 +59,7 @@ class OutputFormat(object):
 
 
 class VersionOutputFormat(OutputFormat):
+    __V36 = Version("3.6")
     __V40 = Version("4.0")
     __V43 = Version("4.3")
     __V44 = Version("4.4")
@@ -84,6 +85,58 @@ class VersionOutputFormat(OutputFormat):
                 "Pool%sArray" if version < self.__V40 else "Packed%sArray"
             ),
         )
+
+    @classmethod
+    def guess_version(cls, gd_common_file: "GDCommonFile") -> "VersionOutputFormat":
+        from .objects import (
+            TypedDictionary,
+            PackedVector4Array,
+            PackedByteArray,
+            SubResource,
+            ExtResource,
+        )
+
+        format = None
+
+        if "format" in gd_common_file._sections[0].header:
+            format = gd_common_file._sections[0].header["format"]
+
+        version = cls.__V40
+
+        if format == 2:
+            version = cls.__V36
+            return cls(version)
+        if not "load_steps" in gd_common_file._sections[0].header:
+            version = cls.__V46
+
+        force_format_4 = False
+
+        if format == 4:
+            version = max(version, cls.__V43)
+            force_format_4 = True
+
+        for reference in gd_common_file._iter_resource_references():
+            if isinstance(reference, SubResource) and isinstance(reference.id, int):
+                version = cls.__V36
+                return cls(version)
+            elif isinstance(reference, ExtResource) and isinstance(reference.id, int):
+                version = cls.__V36
+                return cls(version)
+            elif isinstance(reference, TypedDictionary):
+                version = max(version, cls.__V44)
+            elif isinstance(reference, PackedVector4Array):
+                version = max(version, cls.__V43)
+            elif (
+                isinstance(reference, PackedByteArray) and reference._stored_as_base64()
+            ):
+                version = max(version, cls.__V43)
+
+        output_format = cls(version)
+
+        if force_format_4:
+            output_format._force_format_4_if_available = True
+
+        return output_format
 
 
 class Outputable(object):
