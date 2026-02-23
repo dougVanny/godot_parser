@@ -10,6 +10,7 @@ from .objects import (
     SubResource,
     PackedVector4Array,
     PackedByteArray,
+    GDIterable,
 )
 from .output import Outputable, OutputFormat
 from .sections import (
@@ -312,6 +313,9 @@ class GDCommonFile(GDFile):
                     yield from iter_resources(k)
                 for v in value.values():
                     yield from iter_resources(v)
+            elif isinstance(value, GDIterable):
+                yield value
+                yield from value._iter_objects()
             elif isinstance(value, GDObject):
                 yield value
                 for v in value.args:
@@ -359,7 +363,10 @@ class GDCommonFile(GDFile):
                             ref.resource = section
                     section.id = str(section.id)
                 elif section.id is None:
-                    section.id = output_format.generate_id(section, next_id)
+                    section.id = "%s_%s" % (
+                        reference_type.get_id_key(next_id),
+                        output_format.generate_id(section),
+                    )
                     next_id += 1
         else:
             ids = [s.id for s in sections if isinstance(s.id, int)]

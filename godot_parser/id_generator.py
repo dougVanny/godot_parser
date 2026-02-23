@@ -4,7 +4,7 @@ from typing import Any
 
 
 class BaseGenerator(object):
-    def generate(self, section: Any, index: int):
+    def generate(self, section: Any):
         return ""
 
 
@@ -13,17 +13,14 @@ class RandomIdGenerator(BaseGenerator):
         self.length = length
         self.pool = pool
 
-    def generate(self, section: Any, index: int):
-        return "%s_%s" % (
-            index,
-            "".join((choice(self.pool) for _ in range(self.length))),
-        )
+    def generate(self, section: Any):
+        return "".join((choice(self.pool) for _ in range(self.length)))
 
 
 class SequentialHexGenerator(BaseGenerator):
     def __init__(self):
         self.counter = 0
 
-    def generate(self, section: Any, index: int):
+    def generate(self, section: Any):
         self.counter += 1
-        return "%s_%x" % (index, self.counter)
+        return "%x" % (self.counter)

@@ -51,8 +51,8 @@ class OutputFormat(object):
     def surround_brackets(self, content: str) -> str:
         return self.surround_string(("[", "]"), content)
 
-    def generate_id(self, section: Any, index: int) -> str:
-        return self._id_generator.generate(section, index)
+    def generate_id(self, section: Any) -> str:
+        return self._id_generator.generate(section)
 
 
 class VersionOutputFormat(OutputFormat):

@@ -4,7 +4,7 @@ import base64
 import re
 from functools import partial
 from math import floor
-from typing import Optional, Type, TypeVar, Union, List, Any
+from typing import Optional, Type, TypeVar, Union, List, Any, Iterable
 
 from .output import Outputable, OutputFormat
 from .util import Identifiable, stringify_object
@@ -360,6 +360,10 @@ class ResourceReference(GDObject):
         self.resource = id
         self.args = [id]
 
+    @classmethod
+    def get_id_key(cls, index: Optional[int] = None) -> str:
+        return "Resource"
+
     def _output_to_string(self, output_format: OutputFormat) -> str:
         if isinstance(self.resource, Identifiable):
             id = self.resource.get_id()
@@ -372,17 +376,26 @@ class ExtResource(ResourceReference):
     def __init__(self, resource: Union[int, str, Identifiable]) -> None:
         super().__init__("ExtResource", resource)
 
+    @classmethod
+    def get_id_key(cls, index: Optional[int] = None) -> str:
+        return str(index)
+
 
 class SubResource(ResourceReference):
     def __init__(self, resource: Union[int, str, Identifiable]) -> None:
         super().__init__("SubResource", resource)
 
 
-class TypedArray(Outputable):
+class GDIterable:
+    def _iter_objects(self) -> Iterable[Any]:
+        return iter([])
+
+
+class TypedArray(GDIterable, Outputable):
     def __init__(self, type, list_) -> None:
         self.name = "Array"
         self.type = type
-        self.list_ = list_
+        self.list_: list = list_
 
     @classmethod
     def WithCustomName(cls: Type["TypedArray"], name, type, list_) -> "TypedArray":
@@ -398,7 +411,11 @@ class TypedArray(Outputable):
         if output_format.typed_array_support:
             return (
                 self.name
-                + output_format.surround_brackets(self.type)
+                + output_format.surround_brackets(
+                    self.type.output_to_string(output_format)
+                    if isinstance(self.type, Outputable)
+                    else self.type
+                )
                 + output_format.surround_parentheses(
                     stringify_object(self.list_, output_format)
                 )
@@ -424,13 +441,17 @@ class TypedArray(Outputable):
     def __hash__(self):
         return hash(frozenset((self.name, self.type, self.list_)))
 
+    def _iter_objects(self) -> Iterable[Any]:
+        yield self.type
+        yield from self.list_
 
-class TypedDictionary(Outputable):
+
+class TypedDictionary(GDIterable, Outputable):
     def __init__(self, key_type, value_type, dict_) -> None:
         self.name = "Dictionary"
         self.key_type = key_type
         self.value_type = value_type
-        self.dict_ = dict_
+        self.dict_: dict = dict_
 
     @classmethod
     def WithCustomName(
@@ -449,7 +470,19 @@ class TypedDictionary(Outputable):
             return (
                 self.name
                 + output_format.surround_brackets(
-                    "%s, %s" % (self.key_type, self.value_type)
+                    "%s, %s"
+                    % (
+                        (
+                            self.key_type.output_to_string(output_format)
+                            if isinstance(self.key_type, Outputable)
+                            else self.key_type
+                        ),
+                        (
+                            self.value_type.output_to_string(output_format)
+                            if isinstance(self.value_type, Outputable)
+                            else self.value_type
+                        ),
+                    )
                 )
                 + output_format.surround_parentheses(
                     stringify_object(self.dict_, output_format)
@@ -476,6 +509,12 @@ class TypedDictionary(Outputable):
 
     def __hash__(self):
         return hash(frozenset((self.name, self.key_type, self.value_type, self.dict_)))
+
+    def _iter_objects(self) -> Iterable[Any]:
+        yield self.key_type
+        yield self.value_type
+        yield from self.dict_.keys()
+        yield from self.dict_.values()
 
 
 class StringName(Outputable):

@@ -8,6 +8,8 @@ from godot_parser import (
     GDResource,
     GDResourceSection,
     Node,
+    TypedArray,
+    TypedDictionary,
 )
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.output import OutputFormat
@@ -66,7 +68,7 @@ escaped = "foo(\\"bar\\")"
             scene.output_to_string(self.test_output_format),
             """[gd_scene format=3]
 
-[sub_resource type="Animation" id="1_1"]
+[sub_resource type="Animation" id="Resource_1"]
 """,
         )
 
@@ -207,8 +209,8 @@ visible = false
         res = scene.add_sub_resource("CircleShape2D")
         res2 = scene.add_sub_resource("AnimationNodeAnimation")
         scene.generate_resource_ids(self.test_output_format)
-        self.assertEqual(res.id, "1_1")
-        self.assertEqual(res2.id, "2_2")
+        self.assertEqual(res.id, "Resource_1")
+        self.assertEqual(res2.id, "Resource_2")
         resource = GDResourceSection(shape=res2.reference)
         scene.add_section(resource)
 
@@ -216,7 +218,7 @@ visible = false
         scene.remove_section(s)
 
         s = scene.find_section("sub_resource")
-        self.assertEqual(s.id, "2_2")
+        self.assertEqual(s.id, "Resource_2")
         self.assertEqual(resource["shape"], s.reference)
 
     def test_remove_unused_nested(self):
@@ -245,6 +247,33 @@ visible = false
         self.assertIn(res1, res._sections)
         self.assertNotIn(res2, res._sections)
         self.assertNotIn(res3, res._sections)
+
+    def test_remove_unused_typed(self):
+        """Won't remove used types"""
+        resource = GDResource()
+
+        script1 = resource.add_ext_resource("res://custom_resource.gd", "Script")
+        sub_res1 = resource.add_sub_resource("Resource")
+
+        script2 = resource.add_ext_resource("res://custom_resource_2.gd", "Script")
+        sub_res2 = resource.add_sub_resource("Resource")
+
+        resource.add_ext_resource("res://custom_resource_3.gd", "Script")
+
+        resource["typedArray"] = TypedArray(script1.reference, [sub_res1.reference])
+        resource["typedDict"] = TypedDictionary(
+            script2.reference, "String", {sub_res2.reference: "Cool"}
+        )
+
+        resource.generate_resource_ids()
+
+        self.assertEqual(len(resource.get_sub_resources()), 2)
+        self.assertEqual(len(resource.get_ext_resources()), 3)
+
+        resource.remove_unused_resources()
+
+        self.assertEqual(len(resource.get_sub_resources()), 2)
+        self.assertEqual(len(resource.get_ext_resources()), 2)
 
     def test_find_constraints(self):
         """Test for the find_section constraints"""
@@ -297,15 +326,7 @@ visible = false
 
         self.assertEqual(res2.id, 1)
 
-
-class Godot4Test(unittest.TestCase):
     def test_string_special_characters(self):
-        """
-        Testing strings with multiple special characters. Currently matching Godot 4.6 behavior
-
-        Tab handling is done by calling parse_with_tabs before parse_string
-        For this reason, this test is being done at a GDFile level, where this method is called upon parsing
-        """
         res = GDResource(str_value="\ta\"q'é'd\"\n\n\\")
         self.assertEqual(
             str(res),

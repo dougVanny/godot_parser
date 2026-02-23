@@ -152,7 +152,7 @@ toggle = true\n""",
 
 [ext_resource path="res://a.tres" type="CustomResource" id="1_1"]
 
-[sub_resource type="CustomResource" id="1_2"]
+[sub_resource type="CustomResource" id="Resource_2"]
 
 [resource]
 toggle = true\n""",
@@ -163,7 +163,7 @@ toggle = true\n""",
 
 [ext_resource path="res://a.tres" type="CustomResource" id="1_1"]
 
-[sub_resource type="CustomResource" id="1_2"]
+[sub_resource type="CustomResource" id="Resource_2"]
 
 [resource]
 toggle = true\n""",
@@ -203,7 +203,7 @@ toggle = true\n""",
 
 [ext_resource path="res://a.tres" type="CustomResource" id="1_1"]
 
-[sub_resource type="CustomResource" id="1_2"]
+[sub_resource type="CustomResource" id="Resource_2"]
 
 [resource]
 toggle = true\n""",
