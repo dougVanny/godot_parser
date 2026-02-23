@@ -4,7 +4,7 @@ import base64
 import re
 from functools import partial
 from math import floor
-from typing import Optional, Type, TypeVar, Union, List, Any, Iterable
+from typing import Any, Iterable, List, Optional, Type, TypeVar, Union
 
 from .output import Outputable, OutputFormat
 from .util import Identifiable, stringify_object
@@ -264,10 +264,7 @@ class PackedVector4Array(GDObject):
     def FromList(cls, list_: List[Vector4]) -> "PackedVector4Array":
         return cls(*sum([[v.x, v.y, v.z, v.w] for v in list_], []))
 
-    def __contains__(self, idx: int) -> bool:
-        return len(self.args) > (idx * 4)
-
-    def __getitem__(self, idx: int) -> Vector4:
+    def get_vector4(self, idx: int) -> Vector4:
         return Vector4(
             self.args[idx * 4 + 0],
             self.args[idx * 4 + 1],
@@ -275,13 +272,13 @@ class PackedVector4Array(GDObject):
             self.args[idx * 4 + 3],
         )
 
-    def __setitem__(self, idx: int, value: Vector4) -> None:
+    def set_vector4(self, idx: int, value: Vector4) -> None:
         self.args[idx * 4 + 0] = value.x
         self.args[idx * 4 + 1] = value.y
         self.args[idx * 4 + 2] = value.z
         self.args[idx * 4 + 3] = value.w
 
-    def __delitem__(self, idx: int) -> None:
+    def remove_vector4_at(self, idx: int) -> None:
         del self.args[idx * 4]
         del self.args[idx * 4]
         del self.args[idx * 4]
@@ -292,7 +289,8 @@ class PackedVector4Array(GDObject):
             return super()._output_to_string(output_format)
         else:
             return TypedArray(
-                "Vector4", [self[i] for i in range(floor(len(self.args) / 4))]
+                "Vector4",
+                [self.get_vector4(i) for i in range(floor(len(self.args) / 4))],
             ).output_to_string(output_format)
 
 

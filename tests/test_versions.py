@@ -3,13 +3,13 @@ import os
 import unittest
 
 import tests
-from godot_parser import GDPackedScene, StringName, TypedArray, NodePath, parse
+from godot_parser import GDPackedScene, NodePath, StringName, TypedArray, parse
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.objects import (
     PackedByteArray,
     PackedVector4Array,
-    Vector4,
     TypedDictionary,
+    Vector4,
 )
 from godot_parser.output import VersionOutputFormat
 

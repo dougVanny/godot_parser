@@ -3,19 +3,19 @@ import unittest
 
 from godot_parser import (
     GDExtResourceSection,
+    GDObject,
     GDResource,
     GDSubResourceSection,
-    Vector3,
-    TypedArray,
-    GDObject,
     StringName,
+    TypedArray,
+    Vector3,
 )
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.objects import (
-    PackedVector4Array,
-    Vector4,
-    TypedDictionary,
     PackedByteArray,
+    PackedVector4Array,
+    TypedDictionary,
+    Vector4,
 )
 from godot_parser.output import OutputFormat, VersionOutputFormat
 

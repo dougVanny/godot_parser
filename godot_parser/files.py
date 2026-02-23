@@ -5,23 +5,22 @@ from typing import Any, Iterable, Iterator, List, Optional, Sequence, Type, Unio
 
 from .objects import (
     ExtResource,
+    GDIterable,
     GDObject,
+    PackedByteArray,
+    PackedVector4Array,
     ResourceReference,
     SubResource,
-    PackedVector4Array,
-    PackedByteArray,
-    GDIterable,
 )
 from .output import Outputable, OutputFormat
 from .sections import (
     GDBaseResourceSection,
     GDExtResourceSection,
+    GDFileHeader,
     GDNodeSection,
     GDResourceSection,
     GDSection,
-    GDSectionHeader,
     GDSubResourceSection,
-    GDFileHeader,
 )
 from .structure import scene_file
 from .util import find_project_root, gdpath_to_filepath
