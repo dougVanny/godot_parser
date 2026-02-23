@@ -15,6 +15,7 @@ class OutputFormat(object):
         packed_vector4_array_support: bool = True,
         typed_dictionary_support: bool = True,
         load_steps: bool = False,
+        packed_array_format="Packed%sArray",
     ):
         self.punctuation_spaces = punctuation_spaces
         self.resource_ids_as_strings = resource_ids_as_strings
@@ -23,6 +24,7 @@ class OutputFormat(object):
         self.packed_vector4_array_support = packed_vector4_array_support
         self.typed_dictionary_support = typed_dictionary_support
         self.load_steps = load_steps
+        self.packed_array_format = packed_array_format
 
         self._id_generator = RandomIdGenerator()
 
@@ -71,6 +73,9 @@ class VersionOutputFormat(OutputFormat):
             packed_vector4_array_support=version >= self.__V43,
             typed_dictionary_support=version >= self.__V44,
             load_steps=version < self.__V46,
+            packed_array_format=(
+                "Pool%sArray" if version < self.__V40 else "Packed%sArray"
+            ),
         )
 
 

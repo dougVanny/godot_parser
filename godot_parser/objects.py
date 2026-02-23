@@ -1,6 +1,7 @@
 """Wrappers for Godot's non-primitive object types"""
 
 import base64
+import re
 from functools import partial
 from math import floor
 from typing import Optional, Type, TypeVar, Union, List, Any
@@ -73,8 +74,16 @@ class GDObject(Outputable, metaclass=GDObjectMeta):
         factory = GD_OBJECT_REGISTRY.get(name, partial(GDObject, name))
         return factory(*parse_result[1:])
 
+    __packed_array_re = re.compile(r"^Packed(?P<InnerType>[A-Z]\w+)Array$")
+
     def _output_to_string(self, output_format: OutputFormat) -> str:
-        return self.name + output_format.surround_parentheses(
+        name = self.name
+
+        match = self.__packed_array_re.match(name)
+        if match:
+            name = output_format.packed_array_format % match.group("InnerType")
+
+        return name + output_format.surround_parentheses(
             ", ".join([stringify_object(v, output_format) for v in self.args])
         )
 

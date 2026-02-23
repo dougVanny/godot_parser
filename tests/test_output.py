@@ -7,6 +7,7 @@ from godot_parser import (
     GDSubResourceSection,
     Vector3,
     TypedArray,
+    GDObject,
 )
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.objects import (
@@ -356,4 +357,44 @@ test = [Vector4(1, 2, 3, 4)]\n""",
 
 [resource]
 test = PackedByteArray("%s")\n""" % base64.b64encode(bytes_).decode("utf-8"),
+        )
+
+        self.assertEqual(
+            resource.output_to_string(
+                OutputFormat(packed_byte_array_base64_support=False)
+            ),
+            """[gd_resource format=3]
+
+[resource]
+test = PackedByteArray(5, 88, 10)\n""",
+        )
+
+    def test_packed_array_format(self):
+        resource = GDResource()
+        resource["test1"] = PackedByteArray(bytes(range(4)))
+        resource["test2"] = GDObject("PackedVector2Array", *range(4))
+
+        self.assertEqual(
+            resource.output_to_string(
+                OutputFormat(packed_byte_array_base64_support=False)
+            ),
+            """[gd_resource format=3]
+
+[resource]
+test1 = PackedByteArray(0, 1, 2, 3)
+test2 = PackedVector2Array(0, 1, 2, 3)\n""",
+        )
+
+        self.assertEqual(
+            resource.output_to_string(
+                OutputFormat(
+                    packed_array_format="Pool%sArray",
+                    packed_byte_array_base64_support=False,
+                )
+            ),
+            """[gd_resource format=3]
+
+[resource]
+test1 = PoolByteArray(0, 1, 2, 3)
+test2 = PoolVector2Array(0, 1, 2, 3)\n""",
         )
