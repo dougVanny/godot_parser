@@ -14,6 +14,7 @@ class OutputFormat(object):
         packed_byte_array_base64_support: bool = True,
         packed_vector4_array_support: bool = True,
         typed_dictionary_support: bool = True,
+        string_name_support=True,
         load_steps: bool = False,
         packed_array_format="Packed%sArray",
     ):
@@ -23,6 +24,7 @@ class OutputFormat(object):
         self.packed_byte_array_base64_support = packed_byte_array_base64_support
         self.packed_vector4_array_support = packed_vector4_array_support
         self.typed_dictionary_support = typed_dictionary_support
+        self.string_name_support = string_name_support
         self.load_steps = load_steps
         self.packed_array_format = packed_array_format
 
@@ -72,6 +74,7 @@ class VersionOutputFormat(OutputFormat):
             packed_byte_array_base64_support=version >= self.__V43,
             packed_vector4_array_support=version >= self.__V43,
             typed_dictionary_support=version >= self.__V44,
+            string_name_support=version >= self.__V40,
             load_steps=version < self.__V46,
             packed_array_format=(
                 "Pool%sArray" if version < self.__V40 else "Packed%sArray"

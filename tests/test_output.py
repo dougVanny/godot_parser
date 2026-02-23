@@ -8,6 +8,7 @@ from godot_parser import (
     Vector3,
     TypedArray,
     GDObject,
+    StringName,
 )
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.objects import (
@@ -397,4 +398,24 @@ test2 = PackedVector2Array(0, 1, 2, 3)\n""",
 [resource]
 test1 = PoolByteArray(0, 1, 2, 3)
 test2 = PoolVector2Array(0, 1, 2, 3)\n""",
+        )
+
+    def test_string_name(self):
+        resource = GDResource()
+        resource["strName"] = StringName("StringName")
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(string_name_support=True)),
+            """[gd_resource format=3]
+
+[resource]
+strName = &"StringName"\n""",
+        )
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(string_name_support=False)),
+            """[gd_resource format=3]
+
+[resource]
+strName = "StringName"\n""",
         )

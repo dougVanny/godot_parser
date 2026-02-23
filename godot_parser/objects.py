@@ -487,7 +487,10 @@ class StringName(Outputable):
         return StringName(parse_result[0])
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
-        return "&" + stringify_object(self.str, output_format)
+        marker = ""
+        if output_format.string_name_support:
+            marker = "&"
+        return marker + stringify_object(self.str, output_format)
 
     def __repr__(self) -> str:
         return self.__str__()
