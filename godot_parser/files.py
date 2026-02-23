@@ -3,7 +3,14 @@ import re
 from contextlib import contextmanager
 from typing import Any, Iterable, Iterator, List, Optional, Sequence, Type, Union, cast
 
-from .objects import ExtResource, GDObject, ResourceReference, SubResource
+from .objects import (
+    ExtResource,
+    GDObject,
+    ResourceReference,
+    SubResource,
+    PackedVector4Array,
+    PackedByteArray,
+)
 from .output import Outputable, OutputFormat
 from .sections import (
     GDBaseResourceSection,
@@ -244,6 +251,17 @@ class GDCommonFile(GDFile):
 
         if output_format.resource_ids_as_strings:
             header["format"] = 3
+            for obj in self._iter_resource_references():
+                if (
+                    isinstance(obj, PackedVector4Array)
+                    and output_format.packed_vector4_array_support
+                ):
+                    header["format"] = 4
+                if (
+                    isinstance(obj, PackedByteArray)
+                    and output_format.packed_byte_array_base64_support
+                ):
+                    header["format"] = 4
         else:
             header["format"] = 2
 
@@ -295,6 +313,7 @@ class GDCommonFile(GDFile):
                 for v in value.values():
                     yield from iter_resources(v)
             elif isinstance(value, GDObject):
+                yield value
                 for v in value.args:
                     yield from iter_resources(v)
 
@@ -401,6 +420,10 @@ class GDResource(GDCommonFile):
 
     def __delitem__(self, k: str) -> None:
         del self.resource_section[k]
+
+    def _iter_references(self) -> Iterator[Any]:
+        yield from super()._iter_references()
+        yield self.resource_section.properties
 
 
 class GDPackedScene(GDCommonFile):

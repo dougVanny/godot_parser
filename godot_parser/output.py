@@ -10,16 +10,18 @@ class OutputFormat(object):
         self,
         punctuation_spaces: bool = False,
         resource_ids_as_strings: bool = True,
-        explicit_typed_array: bool = True,
+        typed_array_support: bool = True,
         packed_byte_array_base64_support: bool = True,
-        explicit_typed_dictionary: bool = True,
+        packed_vector4_array_support: bool = True,
+        typed_dictionary_support: bool = True,
         load_steps: bool = False,
     ):
         self.punctuation_spaces = punctuation_spaces
         self.resource_ids_as_strings = resource_ids_as_strings
-        self.explicit_typed_array = explicit_typed_array
+        self.typed_array_support = typed_array_support
         self.packed_byte_array_base64_support = packed_byte_array_base64_support
-        self.explicit_typed_dictionary = explicit_typed_dictionary
+        self.packed_vector4_array_support = packed_vector4_array_support
+        self.typed_dictionary_support = typed_dictionary_support
         self.load_steps = load_steps
 
         self._id_generator = RandomIdGenerator()
@@ -64,9 +66,10 @@ class VersionOutputFormat(OutputFormat):
         super().__init__(
             punctuation_spaces=version < self.__V40,
             resource_ids_as_strings=version >= self.__V40,
-            explicit_typed_array=version >= self.__V40,
+            typed_array_support=version >= self.__V40,
             packed_byte_array_base64_support=version >= self.__V43,
-            explicit_typed_dictionary=version >= self.__V44,
+            packed_vector4_array_support=version >= self.__V43,
+            typed_dictionary_support=version >= self.__V44,
             load_steps=version < self.__V46,
         )
 

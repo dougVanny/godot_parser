@@ -1,7 +1,9 @@
 """Wrappers for Godot's non-primitive object types"""
 
+import base64
 from functools import partial
-from typing import Optional, Type, TypeVar, Union
+from math import floor
+from typing import Optional, Type, TypeVar, Union, List, Any
 
 from .output import Outputable, OutputFormat
 from .util import Identifiable, stringify_object
@@ -51,7 +53,7 @@ class GDObject(Outputable, metaclass=GDObjectMeta):
 
     def __init__(self, name, *args) -> None:
         self.name = name
-        self.args = list(args)
+        self.args: List[Any] = list(args)
 
     def __contains__(self, idx: int) -> bool:
         return idx in self.args
@@ -151,6 +153,51 @@ class Vector3(GDObject):
         self.args[2] = z
 
 
+class Vector4(GDObject):
+    def __init__(self, x: float, y: float, z: float, w: float) -> None:
+        super().__init__("Vector4", x, y, z, w)
+
+    @property
+    def x(self) -> float:
+        """Getter for x"""
+        return self.args[0]
+
+    @x.setter
+    def x(self, x: float) -> None:
+        """Setter for x"""
+        self.args[0] = x
+
+    @property
+    def y(self) -> float:
+        """Getter for y"""
+        return self.args[1]
+
+    @y.setter
+    def y(self, y: float) -> None:
+        """Setter for y"""
+        self.args[1] = y
+
+    @property
+    def z(self) -> float:
+        """Getter for z"""
+        return self.args[2]
+
+    @z.setter
+    def z(self, z: float) -> None:
+        """Setter for z"""
+        self.args[2] = z
+
+    @property
+    def w(self) -> float:
+        """Getter for w"""
+        return self.args[3]
+
+    @w.setter
+    def w(self, w: float) -> None:
+        """Setter for w"""
+        self.args[3] = w
+
+
 class Color(GDObject):
     def __init__(self, r: float, g: float, b: float, a: float) -> None:
         assert 0 <= r <= 1
@@ -198,6 +245,70 @@ class Color(GDObject):
     def a(self, a: float) -> None:
         """Setter for a"""
         self.args[3] = a
+
+
+class PackedVector4Array(GDObject):
+    def __init__(self, list_: List[Vector4]) -> None:
+        super().__init__(
+            "PackedVector4Array", *sum([[v.x, v.y, v.z, v.w] for v in list_], [])
+        )
+
+    def __contains__(self, idx: int) -> bool:
+        return len(self.args) > (idx * 4)
+
+    def __getitem__(self, idx: int) -> Vector4:
+        return Vector4(
+            self.args[idx * 4 + 0],
+            self.args[idx * 4 + 1],
+            self.args[idx * 4 + 2],
+            self.args[idx * 4 + 3],
+        )
+
+    def __setitem__(self, idx: int, value: Vector4) -> None:
+        self.args[idx * 4 + 0] = value.x
+        self.args[idx * 4 + 1] = value.y
+        self.args[idx * 4 + 2] = value.z
+        self.args[idx * 4 + 3] = value.w
+
+    def __delitem__(self, idx: int) -> None:
+        del self.args[idx * 4]
+        del self.args[idx * 4]
+        del self.args[idx * 4]
+        del self.args[idx * 4]
+
+    def _output_to_string(self, output_format: OutputFormat) -> str:
+        if output_format.packed_vector4_array_support:
+            return super()._output_to_string(output_format)
+        else:
+            return TypedArray(
+                "Vector4", [self[i] for i in range(floor(len(self.args) / 4))]
+            ).output_to_string(output_format)
+
+
+class PackedByteArray(GDObject):
+    def __init__(self, bytes_: bytes) -> None:
+        super().__init__("PackedByteArray", *list(bytes_))
+
+    def __stored_as_base64(self) -> bool:
+        return len(self.args) == 1 and isinstance(self.args[0], str)
+
+    @property
+    def bytes_(self) -> bytes:
+        if self.__stored_as_base64():
+            return base64.b64decode(self.args[0])
+        return bytes(self.args)
+
+    @bytes_.setter
+    def bytes_(self, bytes_: bytes) -> None:
+        self.args = list(bytes_)
+
+    def _output_to_string(self, output_format: OutputFormat) -> str:
+        if output_format.packed_byte_array_base64_support:
+            if not self.__stored_as_base64():
+                self.args = [base64.b64encode(self.bytes_).decode("utf-8")]
+        elif self.__stored_as_base64():
+            self.bytes_ = self.bytes_
+        return super()._output_to_string(output_format)
 
 
 class NodePath(GDObject):
@@ -275,13 +386,16 @@ class TypedArray(Outputable):
         return TypedArray.WithCustomName(*parse_result)
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
-        return (
-            self.name
-            + output_format.surround_brackets(self.type)
-            + output_format.surround_parentheses(
-                stringify_object(self.list_, output_format)
+        if output_format.typed_array_support:
+            return (
+                self.name
+                + output_format.surround_brackets(self.type)
+                + output_format.surround_parentheses(
+                    stringify_object(self.list_, output_format)
+                )
             )
-        )
+        else:
+            return stringify_object(self.list_, output_format)
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -322,15 +436,18 @@ class TypedDictionary(Outputable):
         return TypedDictionary.WithCustomName(*parse_result)
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
-        return (
-            self.name
-            + output_format.surround_brackets(
-                "%s, %s" % (self.key_type, self.value_type)
+        if output_format.typed_dictionary_support:
+            return (
+                self.name
+                + output_format.surround_brackets(
+                    "%s, %s" % (self.key_type, self.value_type)
+                )
+                + output_format.surround_parentheses(
+                    stringify_object(self.dict_, output_format)
+                )
             )
-            + output_format.surround_parentheses(
-                stringify_object(self.dict_, output_format)
-            )
-        )
+        else:
+            return stringify_object(self.dict_, output_format)
 
     def __repr__(self) -> str:
         return self.__str__()

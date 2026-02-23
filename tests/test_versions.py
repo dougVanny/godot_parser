@@ -1,7 +1,20 @@
+import base64
 import unittest
 
-from godot_parser import GDExtResourceSection, GDResource, GDSubResourceSection, Vector3
+from godot_parser import (
+    GDExtResourceSection,
+    GDResource,
+    GDSubResourceSection,
+    Vector3,
+    TypedArray,
+)
 from godot_parser.id_generator import SequentialHexGenerator
+from godot_parser.objects import (
+    PackedVector4Array,
+    Vector4,
+    TypedDictionary,
+    PackedByteArray,
+)
 from godot_parser.output import OutputFormat, VersionOutputFormat
 
 
@@ -10,57 +23,57 @@ class TestOutputFormat(unittest.TestCase):
         version_output_format = VersionOutputFormat("3.6")
         self.assertTrue(version_output_format.punctuation_spaces)
         self.assertFalse(version_output_format.resource_ids_as_strings)
-        self.assertFalse(version_output_format.explicit_typed_array)
+        self.assertFalse(version_output_format.typed_array_support)
         self.assertFalse(version_output_format.packed_byte_array_base64_support)
-        self.assertFalse(version_output_format.explicit_typed_dictionary)
+        self.assertFalse(version_output_format.typed_dictionary_support)
         self.assertTrue(version_output_format.load_steps)
 
         version_output_format = VersionOutputFormat("4.0")
         self.assertFalse(version_output_format.punctuation_spaces)
         self.assertTrue(version_output_format.resource_ids_as_strings)
-        self.assertTrue(version_output_format.explicit_typed_array)
+        self.assertTrue(version_output_format.typed_array_support)
         self.assertFalse(version_output_format.packed_byte_array_base64_support)
-        self.assertFalse(version_output_format.explicit_typed_dictionary)
+        self.assertFalse(version_output_format.typed_dictionary_support)
         self.assertTrue(version_output_format.load_steps)
 
         version_output_format = VersionOutputFormat("4.1")
         self.assertFalse(version_output_format.punctuation_spaces)
         self.assertTrue(version_output_format.resource_ids_as_strings)
-        self.assertTrue(version_output_format.explicit_typed_array)
+        self.assertTrue(version_output_format.typed_array_support)
         self.assertFalse(version_output_format.packed_byte_array_base64_support)
-        self.assertFalse(version_output_format.explicit_typed_dictionary)
+        self.assertFalse(version_output_format.typed_dictionary_support)
         self.assertTrue(version_output_format.load_steps)
 
         version_output_format = VersionOutputFormat("4.3")
         self.assertFalse(version_output_format.punctuation_spaces)
         self.assertTrue(version_output_format.resource_ids_as_strings)
-        self.assertTrue(version_output_format.explicit_typed_array)
+        self.assertTrue(version_output_format.typed_array_support)
         self.assertTrue(version_output_format.packed_byte_array_base64_support)
-        self.assertFalse(version_output_format.explicit_typed_dictionary)
+        self.assertFalse(version_output_format.typed_dictionary_support)
         self.assertTrue(version_output_format.load_steps)
 
         version_output_format = VersionOutputFormat("4.4")
         self.assertFalse(version_output_format.punctuation_spaces)
         self.assertTrue(version_output_format.resource_ids_as_strings)
-        self.assertTrue(version_output_format.explicit_typed_array)
+        self.assertTrue(version_output_format.typed_array_support)
         self.assertTrue(version_output_format.packed_byte_array_base64_support)
-        self.assertTrue(version_output_format.explicit_typed_dictionary)
+        self.assertTrue(version_output_format.typed_dictionary_support)
         self.assertTrue(version_output_format.load_steps)
 
         version_output_format = VersionOutputFormat("4.5")
         self.assertFalse(version_output_format.punctuation_spaces)
         self.assertTrue(version_output_format.resource_ids_as_strings)
-        self.assertTrue(version_output_format.explicit_typed_array)
+        self.assertTrue(version_output_format.typed_array_support)
         self.assertTrue(version_output_format.packed_byte_array_base64_support)
-        self.assertTrue(version_output_format.explicit_typed_dictionary)
+        self.assertTrue(version_output_format.typed_dictionary_support)
         self.assertTrue(version_output_format.load_steps)
 
         version_output_format = VersionOutputFormat("4.6")
         self.assertFalse(version_output_format.punctuation_spaces)
         self.assertTrue(version_output_format.resource_ids_as_strings)
-        self.assertTrue(version_output_format.explicit_typed_array)
+        self.assertTrue(version_output_format.typed_array_support)
         self.assertTrue(version_output_format.packed_byte_array_base64_support)
-        self.assertTrue(version_output_format.explicit_typed_dictionary)
+        self.assertTrue(version_output_format.typed_dictionary_support)
         self.assertFalse(version_output_format.load_steps)
 
     def test_punctuation_spaces(self):
@@ -242,4 +255,105 @@ sub = SubResource("1")\n""",
 [resource]
 ext = ExtResource(1)
 sub = SubResource(1)\n""",
+        )
+
+    def test_typed_array_support(self):
+        resource = GDResource()
+        resource["test"] = TypedArray("int", [3, 1, 2])
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(typed_array_support=True)),
+            """[gd_resource format=3]
+
+[resource]
+test = Array[int]([3, 1, 2])\n""",
+        )
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(typed_array_support=False)),
+            """[gd_resource format=3]
+
+[resource]
+test = [3, 1, 2]\n""",
+        )
+
+    def test_typed_dictionary_support(self):
+        resource = GDResource()
+        resource["test"] = TypedDictionary(
+            "int",
+            "String",
+            {
+                1: "One",
+                2: "Two",
+            },
+        )
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(typed_dictionary_support=True)),
+            """[gd_resource format=3]
+
+[resource]
+test = Dictionary[int, String]({
+1: "One",
+2: "Two"
+})\n""",
+        )
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(typed_dictionary_support=False)),
+            """[gd_resource format=3]
+
+[resource]
+test = {
+1: "One",
+2: "Two"
+}\n""",
+        )
+
+    def test_packed_vector4_array_support(self):
+        resource = GDResource()
+        resource["test"] = PackedVector4Array([Vector4(1, 2, 3, 4)])
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(packed_vector4_array_support=True)),
+            """[gd_resource format=4]
+
+[resource]
+test = PackedVector4Array(1, 2, 3, 4)\n""",
+        )
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(packed_vector4_array_support=False)),
+            """[gd_resource format=3]
+
+[resource]
+test = Array[Vector4]([Vector4(1, 2, 3, 4)])\n""",
+        )
+
+        self.assertEqual(
+            resource.output_to_string(
+                OutputFormat(
+                    packed_vector4_array_support=False, typed_array_support=False
+                )
+            ),
+            """[gd_resource format=3]
+
+[resource]
+test = [Vector4(1, 2, 3, 4)]\n""",
+        )
+
+    def test_packed_byte_array_base64_support(self):
+        bytes_ = bytes([5, 88, 10])
+
+        resource = GDResource()
+        resource["test"] = PackedByteArray(bytes_)
+
+        self.assertEqual(
+            resource.output_to_string(
+                OutputFormat(packed_byte_array_base64_support=True)
+            ),
+            """[gd_resource format=4]
+
+[resource]
+test = PackedByteArray("%s")\n""" % base64.b64encode(bytes_).decode("utf-8"),
         )
