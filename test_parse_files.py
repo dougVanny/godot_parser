@@ -7,7 +7,7 @@ import re
 import sys
 import traceback
 
-from godot_parser import load, parse
+from godot_parser import parse
 
 # Regex to detect space sequences
 space_re = re.compile(r" +")
@@ -78,7 +78,7 @@ def join_lines_within_quotes(input: list[str], unescape: bool):
 def _parse_and_test_file(filename: str, verbose: bool, unescape: bool) -> bool:
     if verbose:
         print("Parsing %s" % filename)
-    with open(filename, "r") as ifile:
+    with open(filename, "r", encoding="utf-8") as ifile:
         original_file = ifile.read()
     try:
         parsed_file = str(parse(original_file))
@@ -96,8 +96,10 @@ def _parse_and_test_file(filename: str, verbose: bool, unescape: bool) -> bool:
         unescape,
     )
 
-    diff = difflib.context_diff(
-        original_file, parsed_file, fromfile=filename, tofile="PARSED FILE"
+    diff = list(
+        difflib.context_diff(
+            original_file, parsed_file, fromfile=filename, tofile="PARSED FILE"
+        )
     )
     diff = ["    " + "\n    ".join(l.strip().split("\n")) + "\n" for l in diff]
 

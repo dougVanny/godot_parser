@@ -1,12 +1,12 @@
 """Utils"""
 
 import os
-from typing import Optional
+from typing import Optional, Union
 
 from godot_parser.output import Outputable, OutputFormat
 
 
-def stringify_object(value, output_format: Optional[OutputFormat] = OutputFormat()):
+def stringify_object(value, output_format: OutputFormat = OutputFormat()):
     """Serialize a value to the godot file format"""
     if value is None:
         return "null"
@@ -68,5 +68,5 @@ def is_gd_path(path: str) -> bool:
 
 
 class Identifiable(object):
-    def get_id(self):
-        return self.id
+    def get_id(self) -> Optional[Union[int, str]]:
+        return None

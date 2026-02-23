@@ -1,18 +1,7 @@
 import os
 import re
 from contextlib import contextmanager
-from typing import (
-    Any,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Iterable, Iterator, List, Optional, Sequence, Type, Union, cast
 
 from .objects import ExtResource, GDObject, ResourceReference, SubResource
 from .output import Outputable, OutputFormat
@@ -42,9 +31,6 @@ SCENE_ORDER = [
     "connection",
     "editable",
 ]
-
-
-GDFileType = TypeVar("GDFileType", bound="GDFile")
 
 
 class GodotFileException(Exception):
@@ -180,14 +166,14 @@ class GDFile(Outputable):
         return section
 
     @classmethod
-    def parse(cls: Type[GDFile], contents: str) -> GDFile:
+    def parse(cls: Type["GDFile"], contents: str) -> "GDFile":
         """Parse the contents of a Godot file"""
         return cls.from_parser(
             scene_file.parse_with_tabs().parse_string(contents, parse_all=True)
         )
 
     @classmethod
-    def load(cls: Type[GDFile], filepath: str) -> GDFile:
+    def load(cls: Type["GDFile"], filepath: str) -> "GDFile":
         with open(filepath, "r", encoding="utf-8") as ifile:
             try:
                 file = cls.parse(ifile.read())
@@ -200,7 +186,7 @@ class GDFile(Outputable):
         return file
 
     @classmethod
-    def from_parser(cls: Type[GDFile], parse_result) -> GDFile:
+    def from_parser(cls: Type["GDFile"], parse_result) -> "GDFile":
         first_section = parse_result[0]
         if first_section.header.name == "gd_scene":
             scene = GDPackedScene.__new__(GDPackedScene)
@@ -319,9 +305,7 @@ class GDCommonFile(GDFile):
         for resource in self.get_sections("resource"):
             yield resource.properties
 
-    def generate_resource_ids(
-        self, output_format: Optional[OutputFormat] = OutputFormat()
-    ):
+    def generate_resource_ids(self, output_format: OutputFormat = OutputFormat()):
         self._generate_resource_ids(
             self.get_ext_resources(), ExtResource, output_format
         )
@@ -361,7 +345,7 @@ class GDCommonFile(GDFile):
         else:
             ids = [s.id for s in sections if isinstance(s.id, int)]
             ids.append(1)
-            next_id = max(ids)
+            next_id = max([id for id in ids if id is not None])
             for section in sections:
                 if not isinstance(section.id, int):
                     if isinstance(section.id, str):
@@ -506,8 +490,9 @@ class GDPackedScene(GDCommonFile):
             raise RuntimeError(
                 "Could not find parent scene resource id(%s)" % root.instance
             )
-        return GDPackedScene.load(
-            gdpath_to_filepath(self.project_root, parent_res.path)
+        return cast(
+            GDPackedScene,
+            GDPackedScene.load(gdpath_to_filepath(self.project_root, parent_res.path)),
         )
 
     @contextmanager

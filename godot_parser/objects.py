@@ -1,7 +1,7 @@
 """Wrappers for Godot's non-primitive object types"""
 
 from functools import partial
-from typing import Type, TypeVar, Union
+from typing import Optional, Type, TypeVar, Union
 
 from .output import Outputable, OutputFormat
 from .util import Identifiable, stringify_object
@@ -227,7 +227,7 @@ class ResourceReference(GDObject):
             super().__init__(name, resource)
 
     @property
-    def id(self) -> int:
+    def id(self) -> Optional[Union[int, str]]:
         """Getter for id"""
         if isinstance(self.resource, Identifiable):
             return self.resource.get_id()
@@ -242,7 +242,9 @@ class ResourceReference(GDObject):
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
         if isinstance(self.resource, Identifiable):
-            self.id = self.resource.get_id()
+            id = self.resource.get_id()
+            if id is not None:
+                self.id = id
         return super()._output_to_string(output_format)
 
 
@@ -263,13 +265,13 @@ class TypedArray(Outputable):
         self.list_ = list_
 
     @classmethod
-    def WithCustomName(cls: Type[TypedArray], name, type, list_) -> TypedArray:
+    def WithCustomName(cls: Type["TypedArray"], name, type, list_) -> "TypedArray":
         custom_array = TypedArray(type, list_)
         custom_array.name = name
         return custom_array
 
     @classmethod
-    def from_parser(cls: Type[TypedArray], parse_result) -> TypedArray:
+    def from_parser(cls: Type["TypedArray"], parse_result) -> "TypedArray":
         return TypedArray.WithCustomName(*parse_result)
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
@@ -309,14 +311,14 @@ class TypedDictionary(Outputable):
 
     @classmethod
     def WithCustomName(
-        cls: Type[TypedDictionary], name, key_type, value_type, dict_
-    ) -> TypedDictionary:
+        cls: Type["TypedDictionary"], name, key_type, value_type, dict_
+    ) -> "TypedDictionary":
         custom_dict = TypedDictionary(key_type, value_type, dict_)
         custom_dict.name = name
         return custom_dict
 
     @classmethod
-    def from_parser(cls: Type[TypedDictionary], parse_result) -> TypedDictionary:
+    def from_parser(cls: Type["TypedDictionary"], parse_result) -> "TypedDictionary":
         return TypedDictionary.WithCustomName(*parse_result)
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
@@ -355,7 +357,7 @@ class StringName(Outputable):
         self.str = str
 
     @classmethod
-    def from_parser(cls: Type[StringName], parse_result) -> StringName:
+    def from_parser(cls: Type["StringName"], parse_result) -> "StringName":
         return StringName(parse_result[0])
 
     def _output_to_string(self, output_format: OutputFormat) -> str:

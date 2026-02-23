@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from typing import Any, List, Optional, Union
 
-from .files import GDFile
+from .files import GDPackedScene
 from .sections import GDNodeSection
 
 __all__ = ["Node", "TreeMutationException"]
@@ -296,7 +296,7 @@ class Tree(object):
         return self.root.get_node(path)
 
     @classmethod
-    def build(cls, file: GDFile):
+    def build(cls, file: GDPackedScene):
         """Build the Tree from a flat list of [node]'s"""
         tree = cls()
         # Makes assumptions that the nodes are well-ordered
@@ -328,8 +328,8 @@ class Tree(object):
         return ret
 
 
-def _load_parent_scene(root: Node, file: GDFile):
-    parent_file: GDFile = file.load_parent_scene()
+def _load_parent_scene(root: Node, file: GDPackedScene):
+    parent_file = file.load_parent_scene()
     parent_tree = Tree.build(parent_file)
     # Transfer parent scene's children to this scene
     for child in parent_tree.root.get_children():

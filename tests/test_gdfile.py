@@ -8,7 +8,6 @@ from godot_parser import (
     GDResource,
     GDResourceSection,
     Node,
-    SubResource,
 )
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.output import OutputFormat

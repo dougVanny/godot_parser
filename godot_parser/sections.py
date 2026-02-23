@@ -183,6 +183,9 @@ class GDBaseResourceSection(GDSection, Identifiable):
     def id(self, id: Union[int, str]) -> None:
         self.header["id"] = id
 
+    def get_id(self) -> Optional[Union[int, str]]:
+        return self.id
+
 
 class GDExtResourceSection(GDBaseResourceSection):
     """Section representing an [ext_resource]"""

@@ -1,12 +1,6 @@
 import unittest
 
-from godot_parser import (
-    ExtResource,
-    GDExtResourceSection,
-    GDResource,
-    GDSubResourceSection,
-    Vector3,
-)
+from godot_parser import GDExtResourceSection, GDResource, GDSubResourceSection, Vector3
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.output import OutputFormat, VersionOutputFormat
 

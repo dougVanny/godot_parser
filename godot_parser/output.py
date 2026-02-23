@@ -27,7 +27,7 @@ class OutputFormat(object):
     def surround_string(
         self, punctuation: Union[str, Tuple[str, str]], content: str
     ) -> str:
-        if punctuation is str:
+        if isinstance(punctuation, str):
             right = left = punctuation
         else:
             left = punctuation[0]
@@ -56,7 +56,7 @@ class VersionOutputFormat(OutputFormat):
     __V46 = Version("4.6")
 
     def __init__(self, version: Union[str, Version]):
-        if version is not Version:
+        if not isinstance(version, Version):
             version = Version(version)
 
         self.version = version
