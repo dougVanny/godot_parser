@@ -10,6 +10,7 @@ from godot_parser import (
     Node,
     TypedArray,
     TypedDictionary,
+    StringName,
 )
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.output import OutputFormat
@@ -327,14 +328,84 @@ visible = false
         self.assertEqual(res2.id, 1)
 
     def test_string_special_characters(self):
-        res = GDResource(str_value="\ta\"q'é'd\"\n\n\\")
+        input = "".join(
+            [
+                " ",
+                '"',
+                "a",
+                " ",
+                "'",
+                "'",
+                "\\",
+                "\n",
+                "\t",
+                "\n",
+                "\\",
+                "n",
+                "\n",
+            ]
+        )
+
+        res = GDResource()
+        res["str_value"] = input
+        res["str_name"] = StringName(input)
+
+        print(str(res))
+
         self.assertEqual(
             str(res),
             """[gd_resource format=3]
 
 [resource]
-str_value = "	a\\"q'é'd\\"
-
-\\\\"
-""",
+str_value = "%s"
+str_name = &"%s"
+"""
+            % (
+                "".join(
+                    [
+                        " ",
+                        "\\",
+                        '"',
+                        "a",
+                        " ",
+                        "'",
+                        "'",
+                        "\\",
+                        "\\",
+                        "\n",
+                        "\t",
+                        "\n",
+                        "\\",
+                        "\\",
+                        "n",
+                        "\n",
+                    ]
+                ),
+                "".join(
+                    [
+                        " ",
+                        "\\",
+                        '"',
+                        "a",
+                        " ",
+                        "\\",
+                        "'",
+                        "\\",
+                        "'",
+                        "\\",
+                        "\\",
+                        "\\",
+                        "n",
+                        "\\",
+                        "t",
+                        "\\",
+                        "n",
+                        "\\",
+                        "\\",
+                        "n",
+                        "\\",
+                        "n",
+                    ]
+                ),
+            ),
         )

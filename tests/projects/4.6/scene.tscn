@@ -10,7 +10,7 @@ metadata/_custom_type_script = "uid://d2fhcaebxigkv"
 
 [sub_resource type="Resource" id="1"]
 script = ExtResource("2")
-test_string_name = &"stringName"
+test_string_name = &"string\'Name"
 test_string = "asd\\\\/\\'\"
 
 ç"

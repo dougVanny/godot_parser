@@ -1,6 +1,7 @@
 """Wrappers for Godot's non-primitive object types"""
 
 import base64
+import json
 import re
 from functools import partial
 from math import floor
@@ -537,10 +538,10 @@ class StringName(Outputable):
         return StringName(parse_result[0])
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
-        marker = ""
         if output_format.string_name_support:
-            marker = "&"
-        return marker + stringify_object(self.str, output_format)
+            return "&" + json.dumps(self.str, ensure_ascii=False).replace("'", "\\'")
+        else:
+            return stringify_object(self.str, output_format)
 
     def __repr__(self) -> str:
         return self.__str__()
