@@ -21,6 +21,9 @@ __all__ = [
     "StringName",
     "TypedArray",
     "TypedDictionary",
+    "PackedByteArray",
+    "PackedVector4Array",
+    "GDIterable",
 ]
 
 GD_OBJECT_REGISTRY = {}
