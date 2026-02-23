@@ -257,10 +257,12 @@ class Color(GDObject):
 
 
 class PackedVector4Array(GDObject):
-    def __init__(self, list_: List[Vector4]) -> None:
-        super().__init__(
-            "PackedVector4Array", *sum([[v.x, v.y, v.z, v.w] for v in list_], [])
-        )
+    def __init__(self, *args) -> None:
+        super().__init__("PackedVector4Array", *args)
+
+    @classmethod
+    def FromList(cls, list_: List[Vector4]) -> "PackedVector4Array":
+        return cls(*sum([[v.x, v.y, v.z, v.w] for v in list_], []))
 
     def __contains__(self, idx: int) -> bool:
         return len(self.args) > (idx * 4)
@@ -295,8 +297,12 @@ class PackedVector4Array(GDObject):
 
 
 class PackedByteArray(GDObject):
-    def __init__(self, bytes_: bytes) -> None:
-        super().__init__("PackedByteArray", *list(bytes_))
+    def __init__(self, *args) -> None:
+        super().__init__("PackedByteArray", *args)
+
+    @classmethod
+    def FromBytes(cls, bytes_: bytes) -> "PackedByteArray":
+        return cls(*list(bytes_))
 
     def __stored_as_base64(self) -> bool:
         return len(self.args) == 1 and isinstance(self.args[0], str)
@@ -334,8 +340,12 @@ class NodePath(GDObject):
         """Setter for path"""
         self.args[0] = path
 
-    def __str__(self) -> str:
-        return '%s("%s")' % (self.name, self.path)
+    def _output_to_string(self, output_format: OutputFormat) -> str:
+        original_punctuation_spaces = output_format.punctuation_spaces
+        output_format.punctuation_spaces = False
+        ret = super()._output_to_string(output_format)
+        output_format.punctuation_spaces = original_punctuation_spaces
+        return ret
 
 
 class ResourceReference(GDObject):

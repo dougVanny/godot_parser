@@ -15,6 +15,11 @@ def stringify_object(value, output_format: OutputFormat = OutputFormat()):
     elif isinstance(value, bool):
         return "true" if value else "false"
     elif isinstance(value, dict):
+        if len(value.values()) == 0:
+            if output_format.single_line_on_empty_dict:
+                return "{}"
+            else:
+                return "{\n}"
         return (
             "{\n"
             + ",\n".join(

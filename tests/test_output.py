@@ -98,6 +98,26 @@ array = [Vector3(1, 2, 3)]\n""",
 array = [ Vector3( 1, 2, 3 ) ]\n""",
         )
 
+    def test_single_line_dict(self):
+        resource = GDResource()
+        resource["dict"] = {}
+
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(single_line_on_empty_dict=True)),
+            """[gd_resource format=3]
+
+[resource]
+dict = {}\n""",
+        )
+        self.assertEqual(
+            resource.output_to_string(OutputFormat(single_line_on_empty_dict=False)),
+            """[gd_resource format=3]
+
+[resource]
+dict = {
+}\n""",
+        )
+
     def test_load_steps(self):
         resource = GDResource()
         resource["toggle"] = True
@@ -314,7 +334,7 @@ test = {
 
     def test_packed_vector4_array_support(self):
         resource = GDResource()
-        resource["test"] = PackedVector4Array([Vector4(1, 2, 3, 4)])
+        resource["test"] = PackedVector4Array.FromList([Vector4(1, 2, 3, 4)])
 
         self.assertEqual(
             resource.output_to_string(OutputFormat(packed_vector4_array_support=True)),
@@ -348,7 +368,7 @@ test = [Vector4(1, 2, 3, 4)]\n""",
         bytes_ = bytes([5, 88, 10])
 
         resource = GDResource()
-        resource["test"] = PackedByteArray(bytes_)
+        resource["test"] = PackedByteArray.FromBytes(bytes_)
 
         self.assertEqual(
             resource.output_to_string(
@@ -372,7 +392,7 @@ test = PackedByteArray(5, 88, 10)\n""",
 
     def test_packed_array_format(self):
         resource = GDResource()
-        resource["test1"] = PackedByteArray(bytes(range(4)))
+        resource["test1"] = PackedByteArray.FromBytes(bytes(range(4)))
         resource["test2"] = GDObject("PackedVector2Array", *range(4))
 
         self.assertEqual(

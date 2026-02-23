@@ -9,6 +9,7 @@ class OutputFormat(object):
     def __init__(
         self,
         punctuation_spaces: bool = False,
+        single_line_on_empty_dict: bool = True,
         resource_ids_as_strings: bool = True,
         typed_array_support: bool = True,
         packed_byte_array_base64_support: bool = True,
@@ -19,6 +20,7 @@ class OutputFormat(object):
         packed_array_format="Packed%sArray",
     ):
         self.punctuation_spaces = punctuation_spaces
+        self.single_line_on_empty_dict = single_line_on_empty_dict
         self.resource_ids_as_strings = resource_ids_as_strings
         self.typed_array_support = typed_array_support
         self.packed_byte_array_base64_support = packed_byte_array_base64_support
@@ -28,6 +30,7 @@ class OutputFormat(object):
         self.load_steps = load_steps
         self.packed_array_format = packed_array_format
 
+        self._force_format_4_if_available = False
         self._id_generator = RandomIdGenerator()
 
     def surround_string(
@@ -69,6 +72,7 @@ class VersionOutputFormat(OutputFormat):
 
         super().__init__(
             punctuation_spaces=version < self.__V40,
+            single_line_on_empty_dict=version >= self.__V40,
             resource_ids_as_strings=version >= self.__V40,
             typed_array_support=version >= self.__V40,
             packed_byte_array_base64_support=version >= self.__V43,

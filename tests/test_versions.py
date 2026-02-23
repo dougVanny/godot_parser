@@ -1,7 +1,9 @@
 import base64
+import os
 import unittest
 
-from godot_parser import GDPackedScene, StringName, TypedArray, NodePath
+import tests
+from godot_parser import GDPackedScene, StringName, TypedArray, NodePath, parse
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.objects import (
     PackedByteArray,
@@ -47,8 +49,8 @@ class TestVersions(unittest.TestCase):
 
         child["str"] = "'hello\\me'\n\"HI\""
         child["string name"] = StringName("StringName")
-        child["packedByte"] = PackedByteArray(byte_array)
-        child["packedVector4"] = PackedVector4Array([Vector4(1, 3, 5, 7)])
+        child["packedByte"] = PackedByteArray.FromBytes(byte_array)
+        child["packedVector4"] = PackedVector4Array.FromList([Vector4(1, 3, 5, 7)])
         child["nodepath"] = NodePath(".")
 
     def test_godot_3(self):
@@ -57,9 +59,7 @@ class TestVersions(unittest.TestCase):
             """[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://external.tres" type="CustomResource1" id=1]
-
 [ext_resource path="res://custom_resource.gd" type="Script" id=2]
-
 [ext_resource path="res://custom_resource_2.gd" type="Script" id=3]
 
 [sub_resource type="Resource" id=1]
@@ -84,7 +84,7 @@ str = "'hello\\\\me'
 "string name" = "StringName"
 packedByte = PoolByteArray( 10, 20, 15 )
 packedVector4 = [ Vector4( 1, 3, 5, 7 ) ]
-nodepath = NodePath( "." )
+nodepath = NodePath(".")
 """,
         )
 
@@ -97,9 +97,7 @@ nodepath = NodePath( "." )
             """[gd_scene load_steps=7 format=3]
 
 [ext_resource path="res://external.tres" type="CustomResource1" id="1_1"]
-
 [ext_resource path="res://custom_resource.gd" type="Script" id="2_2"]
-
 [ext_resource path="res://custom_resource_2.gd" type="Script" id="3_3"]
 
 [sub_resource type="Resource" id="Resource_4"]
@@ -137,9 +135,7 @@ nodepath = NodePath(".")
             """[gd_scene load_steps=7 format=4]
 
 [ext_resource path="res://external.tres" type="CustomResource1" id="1_1"]
-
 [ext_resource path="res://custom_resource.gd" type="Script" id="2_2"]
-
 [ext_resource path="res://custom_resource_2.gd" type="Script" id="3_3"]
 
 [sub_resource type="Resource" id="Resource_4"]
@@ -177,9 +173,7 @@ nodepath = NodePath(".")
             """[gd_scene load_steps=7 format=4]
 
 [ext_resource path="res://external.tres" type="CustomResource1" id="1_1"]
-
 [ext_resource path="res://custom_resource.gd" type="Script" id="2_2"]
-
 [ext_resource path="res://custom_resource_2.gd" type="Script" id="3_3"]
 
 [sub_resource type="Resource" id="Resource_4"]
@@ -217,9 +211,7 @@ nodepath = NodePath(".")
             """[gd_scene format=4]
 
 [ext_resource path="res://external.tres" type="CustomResource1" id="1_1"]
-
 [ext_resource path="res://custom_resource.gd" type="Script" id="2_2"]
-
 [ext_resource path="res://custom_resource_2.gd" type="Script" id="3_3"]
 
 [sub_resource type="Resource" id="Resource_4"]
@@ -247,3 +239,34 @@ packedVector4 = PackedVector4Array(1, 3, 5, 7)
 nodepath = NodePath(".")
 """ % self.byte_array_base64,
         )
+
+
+class TestRealProject(unittest.TestCase):
+    def test_projects(self):
+        project_folder = os.path.join(os.path.dirname(tests.__file__), "projects")
+        for root, _dirs, files in os.walk(project_folder, topdown=False):
+            for file in files:
+                ext = os.path.splitext(file)[1]
+                if ext not in [".tscn", ".tres"]:
+                    continue
+                filepath = os.path.join(root, file)
+                version, filename = os.path.split(
+                    os.path.relpath(filepath, project_folder)
+                )
+
+                with self.subTest("%s - %s" % (version, filename)):
+                    output_format = VersionOutputFormat(version)
+
+                    # Required as Godot uses format=4 not if the tres contains a PackedVector4Array or
+                    # base64 PackedByteArray, but if the originating script contains any such properties
+                    #
+                    # Since we have no access to the original script, we hack this with the prior knowledge that the
+                    # files used for this test contained those types
+                    output_format._force_format_4_if_available = True
+
+                    with open(filepath, "r", encoding="utf-8") as input_file:
+                        file_content = input_file.read()
+                        self.assertEqual(
+                            file_content,
+                            parse(file_content).output_to_string(output_format),
+                        )

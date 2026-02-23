@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=2]
+
+[ext_resource path="res://custom_resource.gd" type="Script" id=1]
+
+[resource]
+script = ExtResource( 1 )
+test_string = ""
+test_vector3 = Vector3( 0, 0, 0 )
+test_enum = 0
+test_array_vector3 = [  ]
+test_dict = {
+}
+test_array_pool = PoolVector2Array(  )

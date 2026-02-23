@@ -60,7 +60,9 @@ class TestGDObjects(unittest.TestCase):
 
     def test_packed_vector4_array(self):
         """Test for PackedVector4Array"""
-        array = PackedVector4Array([Vector4(i, i * 2, i * 3, i * 4) for i in range(3)])
+        array = PackedVector4Array.FromList(
+            [Vector4(i, i * 2, i * 3, i * 4) for i in range(3)]
+        )
         self.assertEqual(array[0], Vector4(0, 0, 0, 0))
         self.assertEqual(array[1], Vector4(1, 2, 3, 4))
         self.assertEqual(array[2], Vector4(2, 4, 6, 8))
@@ -71,7 +73,7 @@ class TestGDObjects(unittest.TestCase):
 
     def test_packed_byte_array(self):
         """Test for PackedVector4Array"""
-        array = PackedByteArray(bytes(range(3)))
+        array = PackedByteArray.FromBytes(bytes(range(3)))
         self.assertEqual(array.bytes_[0], 0)
         self.assertEqual(array.bytes_[1], 1)
         self.assertEqual(array.bytes_[2], 2)

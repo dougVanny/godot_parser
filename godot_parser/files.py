@@ -21,6 +21,7 @@ from .sections import (
     GDSection,
     GDSectionHeader,
     GDSubResourceSection,
+    GDFileHeader,
 )
 from .structure import scene_file
 from .util import find_project_root, gdpath_to_filepath
@@ -213,10 +214,23 @@ class GDFile(Outputable):
             ofile.write(self.output_to_string(output_format))
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
-        return (
-            "\n\n".join([s.output_to_string(output_format) for s in self._sections])
-            + "\n"
-        )
+        output = ""
+
+        last_section = None
+
+        for cur_section in self._sections:
+            if (
+                last_section is not None
+                and isinstance(cur_section, GDExtResourceSection)
+                and isinstance(last_section, GDExtResourceSection)
+            ):
+                output = output[:-1]
+
+            output += cur_section.output_to_string(output_format) + "\n\n"
+
+            last_section = cur_section
+
+        return output.rstrip() + "\n"
 
     def __repr__(self) -> str:
         return "%s(%s)" % (type(self).__name__, self.__str__())
@@ -234,7 +248,7 @@ class GDCommonFile(GDFile):
     """Base class with common application logic for all Godot file types"""
 
     def __init__(self, name: str, *sections: GDSection) -> None:
-        super().__init__(GDSection(GDSectionHeader(name)), *sections)
+        super().__init__(GDSection(GDFileHeader(name)), *sections)
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
         self.generate_resource_ids(output_format)
@@ -263,6 +277,11 @@ class GDCommonFile(GDFile):
                     and output_format.packed_byte_array_base64_support
                 ):
                     header["format"] = 4
+            if output_format._force_format_4_if_available and (
+                output_format.packed_byte_array_base64_support
+                or output_format.packed_vector4_array_support
+            ):
+                header["format"] = 4
         else:
             header["format"] = 2
 
@@ -413,8 +432,11 @@ class GDResource(GDCommonFile):
         if type is not None:
             self._sections[0].header["type"] = type
 
-        self.resource_section = GDResourceSection(**attributes)
-        self.add_section(self.resource_section)
+        self.add_section(GDResourceSection(**attributes))
+
+    @property
+    def resource_section(self):
+        return self.find_section("resource")
 
     def __contains__(self, k: str) -> bool:
         return k in self.resource_section

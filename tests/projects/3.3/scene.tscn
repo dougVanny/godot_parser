@@ -1,0 +1,29 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://custom_node.gd" type="Script" id=1]
+[ext_resource path="res://custom_resource.gd" type="Script" id=2]
+[ext_resource path="res://resource.tres" type="Resource" id=3]
+
+[sub_resource type="Resource" id=1]
+script = ExtResource( 2 )
+test_string = "asd\\\\/\\'\"
+
+ç"
+test_vector3 = Vector3( 9, 0, 0 )
+test_enum = 1
+test_array_vector3 = [ Vector3( 0, 1, 0 ), Vector3( 2, 0, 2 ) ]
+test_dict = {
+1: "One",
+1.1: "One dot One",
+PoolIntArray( 2, 3 ): PoolByteArray( 255, 1, 1 )
+}
+test_array_pool = PoolVector2Array( 50, 50, 20, 20 )
+
+[node name="CustomNode" type="Node"]
+script = ExtResource( 1 )
+godot_version = "3.3"
+internalResource = SubResource( 1 )
+externalResource = ExtResource( 3 )
+remoteNode = NodePath("ChildNode")
+
+[node name="ChildNode" type="Node" parent="."]

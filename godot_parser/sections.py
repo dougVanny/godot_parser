@@ -52,18 +52,30 @@ class GDSectionHeader(Outputable):
 
     @classmethod
     def from_parser(cls: Type["GDSectionHeader"], parse_result) -> "GDSectionHeader":
-        header = cls(parse_result[0])
+        factory = cls
+
+        if parse_result[0] in ["gd_resource", "gd_scene"]:
+            factory = GDFileHeader
+
+        header = factory(parse_result[0])
         for attribute in parse_result[1:]:
             header.attributes[attribute[0]] = attribute[1]
         return header
 
+    def _get_key_priority(self, key: str) -> int:
+        return 0
+
     def _output_to_string(self, output_format: OutputFormat) -> str:
         attribute_str = ""
         if self.attributes:
+            keys = sorted(
+                self.attributes.keys(), key=self._get_key_priority, reverse=True
+            )
+
             attribute_str = " " + " ".join(
                 [
-                    "%s=%s" % (k, stringify_object(v, output_format))
-                    for k, v in self.attributes.items()
+                    "%s=%s" % (k, stringify_object(self.attributes[k], output_format))
+                    for k in keys
                 ]
             )
         return "[" + self.name + attribute_str + "]"
@@ -78,6 +90,13 @@ class GDSectionHeader(Outputable):
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
+
+
+class GDFileHeader(GDSectionHeader):
+    def _get_key_priority(self, key: str) -> int:
+        if key == "uid":
+            return -10
+        return super()._get_key_priority(key)
 
 
 class GDSectionMeta(type):
