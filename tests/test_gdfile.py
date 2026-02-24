@@ -153,9 +153,11 @@ visible = false
         """Test GDScene.add_ext_node"""
         scene = GDPackedScene()
         res = scene.add_ext_resource("res://Other.tscn", "PackedScene")
+        scene.generate_resource_ids()
         node = scene.add_ext_node("Root", res.id)
         self.assertEqual(node.name, "Root")
         self.assertEqual(node.instance, res.id)
+        self.assertTrue(scene.is_inherited)
 
     def test_write(self):
         """Test writing scene out to a file"""
