@@ -17,7 +17,7 @@ functionality and make it easier to perform certain tasks. Let's look at an
 example by creating a new scene file for a Player:
 
 ```python
-  from godot_parser import GDPackedScene, Node
+from godot_parser import GDPackedScene, Node, VersionOutputFormat
 
 scene = GDPackedScene()
 res = scene.add_ext_resource("res://PlayerSprite.png", "PackedScene")
@@ -30,7 +30,8 @@ with scene.use_tree() as tree:
             properties={"texture": res.reference},
         )
     )
-scene.write("Player.tscn")
+
+scene.write("Player.tscn", VersionOutputFormat("4.6"))
 ```
 
 It's much easier to use the high-level API when it's available, but it doesn't
