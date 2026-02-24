@@ -78,7 +78,7 @@ class GDObject(Outputable, metaclass=GDObjectMeta):
         factory = GD_OBJECT_REGISTRY.get(name, partial(GDObject, name))
         return factory(*parse_result[1:])
 
-    __packed_array_re = re.compile(r"^Packed(?P<InnerType>[A-Z]\w+)Array$")
+    __packed_array_re = re.compile(r"^(Packed|Pool)(?P<InnerType>[A-Z]\w+)Array$")
 
     def _output_to_string(self, output_format: OutputFormat) -> str:
         name = self.name
