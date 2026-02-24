@@ -3,77 +3,11 @@ import argparse
 import difflib
 import io
 import os
-import re
 import sys
 import traceback
 
 from godot_parser import parse
 from godot_parser.output import VersionOutputFormat
-
-# Regex to detect space sequences
-space_re = re.compile(r" +")
-# Regex to detect all spaces not surrounded by alphanumeric characters
-line_normalizer_re = re.compile(r"(?<=\W) +| +(?=\W)")
-# Regex to detect quotes and possible escape sequences
-find_quote_re = re.compile(r"(\\*\")")
-
-
-def join_lines_within_quotes(input: list[str], unescape: bool):
-    buffer_list = []
-    lines = []
-    buffer = ""
-
-    for part in input:
-        # Find all quotes that are not escaped
-        # " is not escaped. \" is escaped. \\" is not escaped as \\ becomes \, leaving the quote unescaped
-        read_pos = 0
-        for match in find_quote_re.finditer(part):
-            span = match.span()
-            match_text = part[span[0] : span[1]]
-            buffer += part[read_pos : span[1]]
-            read_pos = span[1]
-            if len(match_text) % 2 == 1:
-                buffer_list.append(buffer)
-                buffer = ""
-        buffer += part[read_pos:]
-
-        if (len(buffer_list) % 2 == 0) and buffer:
-            buffer_list.append(buffer)
-            buffer = ""
-
-        if buffer:
-            buffer += "\n"
-        else:
-            for i in range(len(buffer_list)):
-                if i % 2 == 0:
-                    buffer_list[i] = space_re.sub(" ", buffer_list[i])
-                    buffer_list[i] = line_normalizer_re.sub("", buffer_list[i])
-                elif unescape:
-                    buffer_list[i] = (
-                        buffer_list[i]
-                        .encode("latin-1", "backslashreplace")
-                        .decode("unicode-escape")
-                    )
-            lines.append("".join(buffer_list) + "\n")
-            buffer_list = []
-            buffer = ""
-
-    if buffer:
-        buffer_list.append(buffer)
-    if buffer_list:
-        for i in range(len(buffer_list)):
-            if i % 2 == 0:
-                buffer_list[i] = space_re.sub(" ", buffer_list[i])
-                buffer_list[i] = line_normalizer_re.sub("", buffer_list[i])
-            elif unescape:
-                buffer_list[i] = (
-                    buffer_list[i]
-                    .encode("latin-1", "backslashreplace")
-                    .decode("unicode-escape")
-                )
-        lines.append("".join(buffer_list) + "\n")
-
-    return lines
 
 
 def _parse_and_test_file(filename: str, verbose: bool) -> bool:
