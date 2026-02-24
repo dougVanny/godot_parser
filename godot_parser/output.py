@@ -9,7 +9,7 @@ class OutputFormat(object):
     """Controls how Godot files are generated
 
     Attributes:
-        punctuation_spaces : bool
+        punctuation_spaces:
             Determines if spaces should be added between puncuation.
             ex: Vector2( 1, 2 ) vs Vector2(1, 2);
         single_line_on_empty_dict:
