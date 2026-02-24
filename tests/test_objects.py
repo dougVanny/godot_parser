@@ -58,6 +58,35 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(v[1], 4)
         self.assertEqual(v[2], 5)
 
+    def test_vector4(self):
+        """Test for Vector4"""
+        v = Vector4(1, 2, 3, 4)
+        self.assertEqual(v[0], 1)
+        self.assertEqual(v[1], 2)
+        self.assertEqual(v[2], 3)
+        self.assertEqual(v[3], 4)
+        self.assertEqual(v.x, 1)
+        self.assertEqual(v.y, 2)
+        self.assertEqual(v.z, 3)
+        self.assertEqual(v.w, 4)
+        self.assertEqual(str(v), "Vector4(1, 2, 3, 4)")
+        v.x = 2
+        v.y = 3
+        v.z = 4
+        v.w = 5
+        self.assertEqual(v.x, 2)
+        self.assertEqual(v.y, 3)
+        self.assertEqual(v.z, 4)
+        self.assertEqual(v.w, 5)
+        v[0] = 3
+        v[1] = 4
+        v[2] = 5
+        v[3] = 6
+        self.assertEqual(v[0], 3)
+        self.assertEqual(v[1], 4)
+        self.assertEqual(v[2], 5)
+        self.assertEqual(v[3], 6)
+
     def test_packed_vector4_array(self):
         """Test for PackedVector4Array"""
         array = PackedVector4Array.FromList(

@@ -128,13 +128,7 @@ class VersionOutputFormat(OutputFormat):
 
     @classmethod
     def guess_version(cls, gd_common_file) -> "VersionOutputFormat":
-        from .objects import (
-            ExtResource,
-            PackedByteArray,
-            PackedVector4Array,
-            SubResource,
-            TypedDictionary,
-        )
+        from .objects import PackedByteArray, PackedVector4Array, TypedDictionary
 
         format = None
 
@@ -156,13 +150,7 @@ class VersionOutputFormat(OutputFormat):
             force_format_4 = True
 
         for reference in gd_common_file._iter_resource_references():
-            if isinstance(reference, SubResource) and isinstance(reference.id, int):
-                version = cls.__V36
-                return cls(version)
-            elif isinstance(reference, ExtResource) and isinstance(reference.id, int):
-                version = cls.__V36
-                return cls(version)
-            elif isinstance(reference, TypedDictionary):
+            if isinstance(reference, TypedDictionary):
                 version = max(version, cls.__V44)
             elif isinstance(reference, PackedVector4Array):
                 version = max(version, cls.__V43)

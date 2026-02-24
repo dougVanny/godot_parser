@@ -14,7 +14,7 @@ from godot_parser.objects import (
 from godot_parser.output import VersionOutputFormat
 
 
-class TestVersions(unittest.TestCase):
+class TestVersionOutput(unittest.TestCase):
     def setUp(self):
         self.scene = GDPackedScene()
         root = self.scene.add_node("Root", "Node3D")
