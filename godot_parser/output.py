@@ -10,40 +10,40 @@ class OutputFormat(object):
 
     Attributes:
         punctuation_spaces : bool
-            Determines if spaces should be added between puncuation
-            ex: Vector2( 1, 2 ) vs Vector2(1, 2)
+            Determines if spaces should be added between puncuation.
+            ex: Vector2( 1, 2 ) vs Vector2(1, 2);
         single_line_on_empty_dict:
-            Determines if empty dicts should be written on a single line or not
-            ex: "{}" vs "{\n}"
+            Determines if empty dicts should be written on a single line or not.
+            ex: "{}" vs "{\\n}";
         resource_ids_as_strings:
-            Determines if SubResources and ExtResources should be identified with string over int ids
-            ex: ExtResource(1) vs ExtResource("1_n2jr1")
-            ex: SubResource(1) vs SubResource("Resource_b1ij2")
+            Determines if SubResources and ExtResources should be identified with string over int ids.
+            ex: ExtResource(1) vs ExtResource("1_n2jr1");
+            ex: SubResource(1) vs SubResource("Resource_b1ij2");
         typed_array_support:
-            Determines if TypedArrays are supported
-            If unsupported, will be output as regular arrays
-            ex: Array[int]([1]) vs [1]
-         packed_byte_array_base64_support:
-            Determines if PackedByteArrays should be output as base64
-            ex: PackedByteArray("1qr3") vs PackedByteArray(1, 2, 3)
+            Determines if TypedArrays are supported.
+            If unsupported, will be output as regular arrays.
+            ex: Array[int]([1]) vs [1];
+        packed_byte_array_base64_support:
+            Determines if PackedByteArrays should be output as base64.
+            ex: PackedByteArray("1qr3") vs PackedByteArray(1, 2, 3);
         packed_vector4_array_support:
-            Determines if PackedVector4Arrays are supported
-            If unsupported, will be output as a Typed array. May fallback to untyped array
-            ex: PackedVector4Array(1, 2, 3, 4) vs Array[Vector4]([Vector4(1, 2, 3, 4)])
+            Determines if PackedVector4Arrays are supported.
+            If unsupported, will be output as a Typed array. May fallback to untyped array.
+            ex: PackedVector4Array(1, 2, 3, 4) vs Array[Vector4]([Vector4(1, 2, 3, 4)]);
         typed_dictionary_support:
-            Determines if TypedDictionaries are supported:
-            If unsupported, will be output as regular dict
-            ex: Dictionary[int,String]({\n1: "One"\n}) vs {\n1: "One"\n}
+            Determines if TypedDictionaries are supported.
+            If unsupported, will be output as regular dict.
+            ex: Dictionary[int,String]({\\n1: "One"\\n}) vs {\\n1: "One"\\n};
         string_name_support:
-            Determines if StringNames are supported
-            If unsupported, will be output as a regular string
-            ex: &"foo" vs "foo"
+            Determines if StringNames are supported.
+            If unsupported, will be output as a regular string.
+            ex: &"foo" vs "foo";
         load_steps:
-            Determines if load_steps will be output on GDFile header
+            Determines if load_steps will be output on GDFile header.
         packed_array_format:
-            Determines type to be used on Packed arrays
-            Packed%sArray for Godot 4.x
-            Pool%sArray for Godot 3.x
+            Determines type to be used on Packed arrays.
+            ex: Packed%sArray for Godot 4.x;
+            ex: Pool%sArray for Godot 3.x;
     """
 
     def __init__(
