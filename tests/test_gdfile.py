@@ -8,9 +8,9 @@ from godot_parser import (
     GDResource,
     GDResourceSection,
     Node,
+    StringName,
     TypedArray,
     TypedDictionary,
-    StringName,
 )
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.output import OutputFormat

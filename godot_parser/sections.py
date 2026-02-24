@@ -2,7 +2,7 @@ import re
 from collections import OrderedDict
 from typing import Any, List, Optional, Type, TypeVar, Union
 
-from .objects import ExtResource, SubResource, StringName
+from .objects import ExtResource, StringName, SubResource
 from .output import Outputable, OutputFormat
 from .util import Identifiable, stringify_object
 

@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple, Union, Type
+from typing import Any, Optional, Tuple, Union
 
 from packaging.version import Version
 
@@ -87,13 +87,13 @@ class VersionOutputFormat(OutputFormat):
         )
 
     @classmethod
-    def guess_version(cls, gd_common_file: "GDCommonFile") -> "VersionOutputFormat":
+    def guess_version(cls, gd_common_file) -> "VersionOutputFormat":
         from .objects import (
-            TypedDictionary,
-            PackedVector4Array,
-            PackedByteArray,
-            SubResource,
             ExtResource,
+            PackedByteArray,
+            PackedVector4Array,
+            SubResource,
+            TypedDictionary,
         )
 
         format = None

@@ -25,7 +25,7 @@ from .sections import (
 from .structure import scene_file
 from .util import find_project_root, gdpath_to_filepath
 
-__all__ = ["GDFile", "GDPackedScene", "GDResource"]
+__all__ = ["GDFile", "GDCommonFile", "GDPackedScene", "GDResource"]
 
 # Scene and resource files seem to group the section types together and sort them.
 # This is the order I've observed

@@ -84,7 +84,7 @@ def _parse_and_test_file(filename: str, verbose: bool) -> bool:
     try:
         parsed_file = parse(original_file)
         output_format = VersionOutputFormat.guess_version(parsed_file)
-        parsed_file = parsed_file.output_to_string(output_format)
+        output_file = parsed_file.output_to_string(output_format)
     except Exception:
         print("! Parsing error on %s" % filename, file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
@@ -93,7 +93,7 @@ def _parse_and_test_file(filename: str, verbose: bool) -> bool:
     diff = list(
         difflib.context_diff(
             io.StringIO(original_file).readlines(),
-            io.StringIO(str(parsed_file)).readlines(),
+            io.StringIO(str(output_file)).readlines(),
             fromfile=filename,
             tofile="PARSED FILE",
         )
