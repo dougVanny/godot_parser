@@ -212,6 +212,12 @@ class GDFile(Outputable):
         with open(filename, "w", encoding="utf-8") as ofile:
             ofile.write(self.output_to_string(output_format))
 
+    __keep_together_sections = [
+        "ext_resource",
+        "connection",
+        "editable",
+    ]
+
     def _output_to_string(self, output_format: OutputFormat) -> str:
         output = ""
 
@@ -220,8 +226,8 @@ class GDFile(Outputable):
         for cur_section in self._sections:
             if (
                 last_section is not None
-                and isinstance(cur_section, GDExtResourceSection)
-                and isinstance(last_section, GDExtResourceSection)
+                and cur_section.header.name == last_section.header.name
+                and cur_section.header.name in self.__keep_together_sections
             ):
                 output = output[:-1]
 

@@ -76,7 +76,7 @@ def join_lines_within_quotes(input: list[str], unescape: bool):
     return lines
 
 
-def _parse_and_test_file(filename: str, verbose: bool, unescape: bool) -> bool:
+def _parse_and_test_file(filename: str, verbose: bool) -> bool:
     if verbose:
         print("Parsing %s" % filename)
     with open(filename, "r", encoding="utf-8") as ifile:
@@ -90,18 +90,12 @@ def _parse_and_test_file(filename: str, verbose: bool, unescape: bool) -> bool:
         traceback.print_exc(file=sys.stderr)
         return False
 
-    original_file = join_lines_within_quotes(
-        [l.strip() for l in io.StringIO(original_file).readlines() if l.strip()],
-        unescape,
-    )
-    parsed_file = join_lines_within_quotes(
-        [l.strip() for l in io.StringIO(str(parsed_file)).readlines() if l.strip()],
-        unescape,
-    )
-
     diff = list(
         difflib.context_diff(
-            original_file, parsed_file, fromfile=filename, tofile="PARSED FILE"
+            io.StringIO(original_file).readlines(),
+            io.StringIO(str(parsed_file)).readlines(),
+            fromfile=filename,
+            tofile="PARSED FILE",
         )
     )
     diff = ["    " + "\n    ".join(l.strip().split("\n")) + "\n" for l in diff]
@@ -128,14 +122,9 @@ def main():
         action="store_true",
         help="Prints all file paths as they're parsed",
     )
-    parser.add_argument(
-        "--unescape",
-        action="store_true",
-        help="Attempts to unescape strings before comparison (Godot 4.5+ standard)",
-    )
     args = parser.parse_args()
     if os.path.isfile(args.file_or_dir):
-        _parse_and_test_file(args.file_or_dir, args.verbose, args.unescape)
+        _parse_and_test_file(args.file_or_dir, args.verbose)
     else:
         all_passed = True
         for root, _dirs, files in os.walk(args.file_or_dir, topdown=False):
@@ -144,7 +133,7 @@ def main():
                 if ext not in [".tscn", ".tres"]:
                     continue
                 filepath = os.path.join(root, file)
-                if not _parse_and_test_file(filepath, args.verbose, args.unescape):
+                if not _parse_and_test_file(filepath, args.verbose):
                     all_passed = False
                     if not args.all:
                         return 1

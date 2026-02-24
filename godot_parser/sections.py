@@ -2,7 +2,7 @@ import re
 from collections import OrderedDict
 from typing import Any, List, Optional, Type, TypeVar, Union
 
-from .objects import ExtResource, SubResource
+from .objects import ExtResource, SubResource, StringName
 from .output import Outputable, OutputFormat
 from .util import Identifiable, stringify_object
 
@@ -75,7 +75,19 @@ class GDSectionHeader(Outputable):
 
             attribute_str = " " + " ".join(
                 [
-                    "%s=%s" % (k, stringify_object(self.attributes[k], output_format))
+                    "%s=%s"
+                    % (
+                        k,
+                        (
+                            # Bizarre but consistent edge case as far as I could tell.
+                            # Would be more than happy to just live with it though
+                            " "
+                            if isinstance(self.attributes[k], list)
+                            and isinstance(self.attributes[k][0], StringName)
+                            else ""
+                        )
+                        + stringify_object(self.attributes[k], output_format),
+                    )
                     for k in keys
                 ]
             )
