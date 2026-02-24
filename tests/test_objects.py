@@ -12,6 +12,7 @@ from godot_parser import (
     Vector2,
     Vector3,
 )
+from godot_parser.objects import PackedByteArray, PackedVector4Array, Vector4
 
 
 class TestGDObjects(unittest.TestCase):
@@ -56,6 +57,26 @@ class TestGDObjects(unittest.TestCase):
         self.assertEqual(v[0], 3)
         self.assertEqual(v[1], 4)
         self.assertEqual(v[2], 5)
+
+    def test_packed_vector4_array(self):
+        """Test for PackedVector4Array"""
+        array = PackedVector4Array.FromList(
+            [Vector4(i, i * 2, i * 3, i * 4) for i in range(3)]
+        )
+        self.assertEqual(array.get_vector4(0), Vector4(0, 0, 0, 0))
+        self.assertEqual(array.get_vector4(1), Vector4(1, 2, 3, 4))
+        self.assertEqual(array.get_vector4(2), Vector4(2, 4, 6, 8))
+
+        array.remove_vector4_at(1)
+
+        self.assertEqual(array.get_vector4(1), Vector4(2, 4, 6, 8))
+
+    def test_packed_byte_array(self):
+        """Test for PackedVector4Array"""
+        array = PackedByteArray.FromBytes(bytes(range(3)))
+        self.assertEqual(array.bytes_[0], 0)
+        self.assertEqual(array.bytes_[1], 1)
+        self.assertEqual(array.bytes_[2], 2)
 
     def test_color(self):
         """Test for Color"""

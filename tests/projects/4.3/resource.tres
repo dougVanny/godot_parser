@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CustomResource" load_steps=2 format=4 uid="uid://c2aqhm1bli2jd"]
+
+[ext_resource type="Script" path="res://custom_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+test_string_name = &""
+test_string = "test"
+test_vector3 = Vector3(0, 0, 0)
+test_enum = 0
+test_array_vector3 = Array[Vector3]([])
+test_dict = {}
+test_array_pool = PackedVector2Array()
+test_array_pool2 = PackedVector4Array()

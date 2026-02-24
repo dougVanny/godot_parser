@@ -39,11 +39,10 @@ class TestGDSections(unittest.TestCase):
 
         del s["vframes"]
         self.assertEqual(s.get("vframes"), None)
-        del s["vframes"]
 
     def test_ext_resource(self):
         """Test for GDExtResourceSection"""
-        s = GDExtResourceSection("res://Other.tscn", type="PackedScene", id=1)
+        s = GDExtResourceSection("res://Other.tscn", type_="PackedScene", id_=1)
         self.assertEqual(s.path, "res://Other.tscn")
         self.assertEqual(s.type, "PackedScene")
         self.assertEqual(s.id, 1)
@@ -56,7 +55,7 @@ class TestGDSections(unittest.TestCase):
 
     def test_sub_resource(self):
         """Test for GDSubResourceSection"""
-        s = GDSubResourceSection(type="CircleShape2D", id=1)
+        s = GDSubResourceSection(type_="CircleShape2D", id_=1)
         self.assertEqual(s.type, "CircleShape2D")
         self.assertEqual(s.id, 1)
         s.type = "Animation"

@@ -1,23 +1,27 @@
 import re
 from collections import OrderedDict
-from typing import Any, List, Optional, Type, TypeVar
+from typing import Any, List, Optional, Type, TypeVar, Union
 
-from .objects import ExtResource, SubResource
-from .util import stringify_object
+from .objects import ExtResource, StringName, SubResource
+from .output import Outputable, OutputFormat
+from .util import Identifiable, stringify_object
 
 __all__ = [
     "GDSectionHeader",
     "GDSection",
     "GDNodeSection",
+    "GDBaseResourceSection",
     "GDExtResourceSection",
     "GDSubResourceSection",
     "GDResourceSection",
+    "GDFileHeader",
 ]
+
 
 GD_SECTION_REGISTRY = {}
 
 
-class GDSectionHeader(object):
+class GDSectionHeader(Outputable):
     """
     Represents the header for a section
 
@@ -32,6 +36,9 @@ class GDSectionHeader(object):
         for k, v in kwargs.items():
             self.attributes[k] = v
 
+    def __contains__(self, k: str) -> bool:
+        return k in self.attributes
+
     def __getitem__(self, k: str) -> Any:
         return self.attributes[k]
 
@@ -39,26 +46,50 @@ class GDSectionHeader(object):
         self.attributes[k] = v
 
     def __delitem__(self, k: str):
-        try:
-            del self.attributes[k]
-        except KeyError:
-            pass
+        del self.attributes[k]
 
     def get(self, k: str, default: Any = None) -> Any:
         return self.attributes.get(k, default)
 
     @classmethod
     def from_parser(cls: Type["GDSectionHeader"], parse_result) -> "GDSectionHeader":
-        header = cls(parse_result[0])
+        factory = cls
+
+        if parse_result[0] in ["gd_resource", "gd_scene"]:
+            factory = GDFileHeader
+
+        header = factory(parse_result[0])
         for attribute in parse_result[1:]:
             header.attributes[attribute[0]] = attribute[1]
         return header
 
-    def __str__(self) -> str:
+    def _get_key_priority(self, key: str) -> int:
+        return 0
+
+    def _output_to_string(self, output_format: OutputFormat) -> str:
         attribute_str = ""
         if self.attributes:
+            keys = sorted(
+                self.attributes.keys(), key=self._get_key_priority, reverse=True
+            )
+
             attribute_str = " " + " ".join(
-                ["%s=%s" % (k, stringify_object(v)) for k, v in self.attributes.items()]
+                [
+                    "%s=%s"
+                    % (
+                        k,
+                        (
+                            # Bizarre but consistent edge case as far as I could tell.
+                            # Would be more than happy to just live with it though
+                            " "
+                            if isinstance(self.attributes[k], list)
+                            and isinstance(self.attributes[k][0], StringName)
+                            else ""
+                        )
+                        + stringify_object(self.attributes[k], output_format),
+                    )
+                    for k in keys
+                ]
             )
         return "[" + self.name + attribute_str + "]"
 
@@ -72,6 +103,13 @@ class GDSectionHeader(object):
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
+
+
+class GDFileHeader(GDSectionHeader):
+    def _get_key_priority(self, key: str) -> int:
+        if key == "uid":
+            return -10
+        return super()._get_key_priority(key)
 
 
 class GDSectionMeta(type):
@@ -88,7 +126,7 @@ class GDSectionMeta(type):
 GDSectionType = TypeVar("GDSectionType", bound="GDSection")
 
 
-class GDSection(metaclass=GDSectionMeta):
+class GDSection(Outputable, metaclass=GDSectionMeta):
     """
     Represents a full section of a GD file
 
@@ -105,6 +143,9 @@ class GDSection(metaclass=GDSectionMeta):
         for k, v in kwargs.items():
             self.properties[k] = v
 
+    def __contains__(self, k: str) -> bool:
+        return k in self.properties
+
     def __getitem__(self, k: str) -> Any:
         return self.properties[k]
 
@@ -112,10 +153,7 @@ class GDSection(metaclass=GDSectionMeta):
         self.properties[k] = v
 
     def __delitem__(self, k: str) -> None:
-        try:
-            del self.properties[k]
-        except KeyError:
-            pass
+        del self.properties[k]
 
     def get(self, k: str, default: Any = None) -> Any:
         return self.properties.get(k, default)
@@ -131,12 +169,16 @@ class GDSection(metaclass=GDSectionMeta):
             section[k] = v
         return section
 
-    def __str__(self) -> str:
-        ret = str(self.header)
+    def _output_to_string(self, output_format: OutputFormat) -> str:
+        ret = self.header.output_to_string(output_format)
         if self.properties:
             ret += "\n" + "\n".join(
                 [
-                    "%s = %s" % ('"' + k + '"' if " " in k else k, stringify_object(v))
+                    "%s = %s"
+                    % (
+                        '"' + k + '"' if " " in k else k,
+                        stringify_object(v, output_format),
+                    )
                     for k, v in self.properties.items()
                 ]
             )
@@ -154,11 +196,34 @@ class GDSection(metaclass=GDSectionMeta):
         return not self.__eq__(other)
 
 
-class GDExtResourceSection(GDSection):
+class GDBaseResourceSection(GDSection, Identifiable):
+    @property
+    def type(self) -> str:
+        return self.header["type"]
+
+    @type.setter
+    def type(self, type: str) -> None:
+        self.header["type"] = type
+
+    @property
+    def id(self) -> Optional[Union[int, str]]:
+        if "id" in self.header:
+            return self.header["id"]
+        return None
+
+    @id.setter
+    def id(self, id: Union[int, str]) -> None:
+        self.header["id"] = id
+
+    def get_id(self) -> Optional[Union[int, str]]:
+        return self.id
+
+
+class GDExtResourceSection(GDBaseResourceSection):
     """Section representing an [ext_resource]"""
 
-    def __init__(self, path: str, type: str, id: int):
-        super().__init__(GDSectionHeader("ext_resource", path=path, type=type, id=id))
+    def __init__(self, path: str, type_: str, id_: Optional[Union[int, str]] = None):
+        super().__init__(GDSectionHeader("ext_resource", path=path, type=type_, id=id_))
 
     @property
     def path(self) -> str:
@@ -169,51 +234,19 @@ class GDExtResourceSection(GDSection):
         self.header["path"] = path
 
     @property
-    def type(self) -> str:
-        return self.header["type"]
-
-    @type.setter
-    def type(self, type: str) -> None:
-        self.header["type"] = type
-
-    @property
-    def id(self) -> int:
-        return self.header["id"]
-
-    @id.setter
-    def id(self, id: int) -> None:
-        self.header["id"] = id
-
-    @property
     def reference(self) -> ExtResource:
-        return ExtResource(self.id)
+        return ExtResource(self)
 
 
-class GDSubResourceSection(GDSection):
+class GDSubResourceSection(GDBaseResourceSection):
     """Section representing a [sub_resource]"""
 
-    def __init__(self, type: str, id: int, **kwargs):
-        super().__init__(GDSectionHeader("sub_resource", type=type, id=id), **kwargs)
-
-    @property
-    def type(self) -> str:
-        return self.header["type"]
-
-    @type.setter
-    def type(self, type: str) -> None:
-        self.header["type"] = type
-
-    @property
-    def id(self) -> int:
-        return self.header["id"]
-
-    @id.setter
-    def id(self, id: int) -> None:
-        self.header["id"] = id
+    def __init__(self, type_: str, id_: Optional[Union[int, str]] = None, **kwargs):
+        super().__init__(GDSectionHeader("sub_resource", type=type_, id=id_), **kwargs)
 
     @property
     def reference(self) -> SubResource:
-        return SubResource(self.id)
+        return SubResource(self)
 
 
 class GDNodeSection(GDSection):
@@ -269,7 +302,8 @@ class GDNodeSection(GDSection):
     @type.setter
     def type(self, type: Optional[str]) -> None:
         if type is None:
-            del self.header["type"]
+            if "type" in self.header:
+                del self.header["type"]
         else:
             self.header["type"] = type
             self.instance = None
@@ -281,7 +315,8 @@ class GDNodeSection(GDSection):
     @parent.setter
     def parent(self, parent: Optional[str]) -> None:
         if parent is None:
-            del self.header["parent"]
+            if "parent" in self.header:
+                del self.header["parent"]
         else:
             self.header["parent"] = parent
 
@@ -295,7 +330,8 @@ class GDNodeSection(GDSection):
     @instance.setter
     def instance(self, instance: Optional[int]) -> None:
         if instance is None:
-            del self.header["instance"]
+            if "instance" in self.header:
+                del self.header["instance"]
         else:
             self.header["instance"] = ExtResource(instance)
             self.type = None
@@ -310,7 +346,8 @@ class GDNodeSection(GDSection):
     @index.setter
     def index(self, index: Optional[int]) -> None:
         if index is None:
-            del self.header["index"]
+            if "index" in self.header:
+                del self.header["index"]
         else:
             self.header["index"] = str(index)
 
@@ -321,7 +358,8 @@ class GDNodeSection(GDSection):
     @groups.setter
     def groups(self, groups: Optional[List[str]]) -> None:
         if groups is None:
-            del self.header["groups"]
+            if "groups" in self.header:
+                del self.header["groups"]
         else:
             self.header["groups"] = groups
 

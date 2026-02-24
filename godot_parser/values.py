@@ -24,7 +24,7 @@ boolean = (
 
 null = Keyword("null").set_parse_action(lambda _: [None])
 
-_string = QuotedString('"', escChar="\\", multiline=True).set_name("string")
+_string = QuotedString('"', esc_char="\\", multiline=True).set_name("string")
 
 _string_name = (
     (Suppress("&") + _string)

@@ -15,7 +15,7 @@ from pyparsing import (
 from .sections import GDSection, GDSectionHeader
 from .values import value
 
-key = QuotedString('"', escChar="\\", multiline=False).set_name("key") | Word(
+key = QuotedString('"', esc_char="\\", multiline=False).set_name("key") | Word(
     alphanums + "_/:"
 ).set_name("key")
 var = Word(alphanums + "_").set_name("variable")

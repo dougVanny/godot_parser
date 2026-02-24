@@ -1,29 +1,31 @@
 import os
+import re
 from contextlib import contextmanager
-from typing import (
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Iterable, Iterator, List, Optional, Sequence, Type, Union, cast
 
-from .objects import ExtResource, GDObject, SubResource
+from .objects import (
+    ExtResource,
+    GDIterable,
+    GDObject,
+    PackedByteArray,
+    PackedVector4Array,
+    ResourceReference,
+    SubResource,
+)
+from .output import Outputable, OutputFormat, VersionOutputFormat
 from .sections import (
+    GDBaseResourceSection,
     GDExtResourceSection,
+    GDFileHeader,
     GDNodeSection,
+    GDResourceSection,
     GDSection,
-    GDSectionHeader,
     GDSubResourceSection,
 )
 from .structure import scene_file
 from .util import find_project_root, gdpath_to_filepath
 
-__all__ = ["GDFile", "GDScene", "GDResource"]
+__all__ = ["GDFile", "GDCommonFile", "GDPackedScene", "GDResource"]
 
 # Scene and resource files seem to group the section types together and sort them.
 # This is the order I've observed
@@ -38,14 +40,12 @@ SCENE_ORDER = [
     "editable",
 ]
 
-GDFileType = TypeVar("GDFileType", bound="GDFile")
-
 
 class GodotFileException(Exception):
     """Thrown when there are errors in a Godot file"""
 
 
-class GDFile(object):
+class GDFile(Outputable):
     """Base class representing the contents of a Godot file"""
 
     project_root: Optional[str] = None
@@ -86,10 +86,6 @@ class GDFile(object):
             return self._sections
         return [s for s in self._sections if s.header.name == name]
 
-    def get_nodes(self) -> List[GDNodeSection]:
-        """Get all [node] sections"""
-        return cast(List[GDNodeSection], self.get_sections("node"))
-
     def get_ext_resources(self) -> List[GDExtResourceSection]:
         """Get all [ext_resource] sections"""
         return cast(List[GDExtResourceSection], self.get_sections("ext_resource"))
@@ -97,15 +93,6 @@ class GDFile(object):
     def get_sub_resources(self) -> List[GDSubResourceSection]:
         """Get all [sub_resource] sections"""
         return cast(List[GDSubResourceSection], self.get_sections("sub_resource"))
-
-    def find_node(
-        self, property_constraints: Optional[dict] = None, **constraints
-    ) -> Optional[GDNodeSection]:
-        """Find first [node] section that matches (see find_section)"""
-        return cast(
-            GDNodeSection,
-            self.find_section("node", property_constraints, **constraints),
-        )
 
     def find_ext_resource(
         self, property_constraints: Optional[dict] = None, **constraints
@@ -176,17 +163,329 @@ class GDFile(object):
 
     def add_ext_resource(self, path: str, type: str) -> GDExtResourceSection:
         """Add an ext_resource"""
-        next_id = 1 + max([s.id for s in self.get_ext_resources()] + [0])
-        section = GDExtResourceSection(path, type, next_id)
+        section = GDExtResourceSection(path, type)
         self.add_section(section)
         return section
 
     def add_sub_resource(self, type: str, **kwargs) -> GDSubResourceSection:
         """Add a sub_resource"""
-        next_id = 1 + max([s.id for s in self.get_sub_resources()] + [0])
-        section = GDSubResourceSection(type, next_id, **kwargs)
+        section = GDSubResourceSection(type, **kwargs)
         self.add_section(section)
         return section
+
+    @classmethod
+    def parse(cls: Type["GDFile"], contents: str) -> "GDFile":
+        """Parse the contents of a Godot file"""
+        return cls.from_parser(
+            scene_file.parse_with_tabs().parse_string(contents, parse_all=True)
+        )
+
+    @classmethod
+    def load(cls: Type["GDFile"], filepath: str) -> "GDFile":
+        with open(filepath, "r", encoding="utf-8") as ifile:
+            try:
+                file = cls.parse(ifile.read())
+            except UnicodeDecodeError:
+                raise NotImplementedError(  # pylint: disable=W0707
+                    "Error loading %s: godot_parser does not support binary scenes"
+                    % filepath
+                )
+        file.project_root = find_project_root(filepath)
+        return file
+
+    @classmethod
+    def from_parser(cls: Type["GDFile"], parse_result) -> "GDFile":
+        first_section = parse_result[0]
+        if first_section.header.name == "gd_scene":
+            scene = GDPackedScene.__new__(GDPackedScene)
+            scene._sections = list(parse_result)
+            return scene
+        elif first_section.header.name == "gd_resource":
+            resource = GDResource.__new__(GDResource)
+            resource._sections = list(parse_result)
+            return resource
+        return cls(*parse_result)
+
+    def write(self, filename: str, output_format: Optional[OutputFormat] = None):
+        """Writes this to a file"""
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, "w", encoding="utf-8") as ofile:
+            ofile.write(self.output_to_string(output_format))
+
+    __keep_together_sections = [
+        "ext_resource",
+        "connection",
+        "editable",
+    ]
+
+    def _output_to_string(self, output_format: OutputFormat) -> str:
+        output = ""
+
+        last_section = None
+
+        for cur_section in self._sections:
+            if (
+                last_section is not None
+                and cur_section.header.name == last_section.header.name
+                and cur_section.header.name in self.__keep_together_sections
+            ):
+                output = output[:-1]
+
+            output += cur_section.output_to_string(output_format) + "\n\n"
+
+            last_section = cur_section
+
+        return output.rstrip() + "\n"
+
+    def __repr__(self) -> str:
+        return "%s(%s)" % (type(self).__name__, self.__str__())
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, GDFile):
+            return False
+        return self._sections == other._sections
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
+
+class GDCommonFile(GDFile):
+    """Base class with common application logic for all Godot file types"""
+
+    def __init__(self, name: str, *sections: GDSection) -> None:
+        super().__init__(GDSection(GDFileHeader(name)), *sections)
+
+    def output_to_string(self, output_format: Optional[OutputFormat] = None) -> str:
+        if output_format is None:
+            output_format = VersionOutputFormat.guess_version(self)
+        return super().output_to_string(output_format)
+
+    def _output_to_string(self, output_format: OutputFormat) -> str:
+        self.generate_resource_ids(output_format)
+
+        header = self._sections[0].header
+        if "load_steps" in header:
+            del header["load_steps"]
+        if "format" in header:
+            del header["format"]
+
+        if output_format.load_steps:
+            header["load_steps"] = (
+                1 + len(self.get_ext_resources()) + len(self.get_sub_resources())
+            )
+
+        if output_format.resource_ids_as_strings:
+            header["format"] = 3
+            for obj in self._iter_resource_references():
+                if (
+                    isinstance(obj, PackedVector4Array)
+                    and output_format.packed_vector4_array_support
+                ):
+                    header["format"] = 4
+                if (
+                    isinstance(obj, PackedByteArray)
+                    and output_format.packed_byte_array_base64_support
+                ):
+                    header["format"] = 4
+            if output_format._force_format_4_if_available and (
+                output_format.packed_byte_array_base64_support
+                or output_format.packed_vector4_array_support
+            ):
+                header["format"] = 4
+        else:
+            header["format"] = 2
+
+        ret = super()._output_to_string(output_format)
+
+        return ret
+
+    def add_section(self, new_section: GDSection) -> int:
+        idx = super().add_section(new_section)
+        return idx
+
+    def remove_at(self, index: int):
+        self._sections.pop(index)
+
+    def remove_unused_resources(self):
+        self._remove_unused_resources(self.get_ext_resources(), ExtResource)
+        self._remove_unused_resources(self.get_sub_resources(), SubResource)
+
+    def _remove_unused_resources(
+        self,
+        sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
+        reference_type: Type[Union[ExtResource, SubResource]],
+    ) -> None:
+        done_removing = False
+        while not done_removing:
+            done_removing = True
+            seen = set()
+            for ref in self._iter_resource_references():
+                if isinstance(ref, reference_type):
+                    seen.add(ref.id)
+            if len(seen) < len(sections):
+                to_remove = [s for s in sections if s.id not in seen]
+                for s in to_remove:
+                    if self.remove_section(s):
+                        done_removing = False
+
+    def _iter_resource_references(
+        self,
+    ) -> Iterator[Union[ExtResource, SubResource]]:
+        def iter_resources(value):
+            if isinstance(value, ExtResource):
+                yield value
+            elif isinstance(value, SubResource):
+                yield value
+                sub_resource = self.find_sub_resource(id=value.id)
+                if sub_resource is not None:
+                    yield from iter_resources(sub_resource.properties)
+            elif isinstance(value, list):
+                for v in value:
+                    yield from iter_resources(v)
+            elif isinstance(value, dict):
+                for k in value.keys():
+                    yield from iter_resources(k)
+                for v in value.values():
+                    yield from iter_resources(v)
+            elif isinstance(value, GDIterable):
+                yield value
+                yield from value._iter_objects()
+            elif isinstance(value, GDObject):
+                yield value
+                for v in value.args:
+                    yield from iter_resources(v)
+
+        for reference in self._iter_references():
+            yield from iter_resources(reference)
+
+    def _iter_references(self) -> Iterator[Any]:
+        for resource in self.get_sections("resource"):
+            yield resource.properties
+
+    def generate_resource_ids(self, output_format: OutputFormat = OutputFormat()):
+        self._generate_resource_ids(
+            self.get_ext_resources(), ExtResource, output_format
+        )
+        self._generate_resource_ids(
+            self.get_sub_resources(), SubResource, output_format
+        )
+
+    __extract_int_re = re.compile(r"^(\d+)")
+
+    def __extract_int_id(self, id_: Union[int, str, None]) -> Optional[int]:
+        if isinstance(id_, int) or id_ is None:
+            return id_
+        match = self.__extract_int_re.match(id_)
+        if match:
+            return int(match.group(0))
+        return None
+
+    def _generate_resource_ids(
+        self,
+        sections: Sequence[GDBaseResourceSection],
+        reference_type: Type[ResourceReference],
+        output_format: OutputFormat,
+    ):
+        if output_format.resource_ids_as_strings:
+            ids = [self.__extract_int_id(s.id) for s in sections]
+            ids.append(1)
+            next_id = max([id for id in ids if id is not None])
+            for section in sections:
+                if isinstance(section.id, int):
+                    for ref in self._iter_resource_references():
+                        if isinstance(ref, reference_type) and ref.id == section.id:
+                            ref.resource = section
+                    section.id = str(section.id)
+                elif section.id is None:
+                    section.id = "%s_%s" % (
+                        reference_type.get_id_key(next_id),
+                        output_format.generate_id(section),
+                    )
+                    next_id += 1
+        else:
+            ids = [s.id for s in sections if isinstance(s.id, int)]
+            ids.append(1)
+            next_id = max([id for id in ids if id is not None])
+            for section in sections:
+                if not isinstance(section.id, int):
+                    if isinstance(section.id, str):
+                        for ref in self._iter_resource_references():
+                            if isinstance(ref, reference_type) and ref.id == section.id:
+                                ref.resource = section
+                    section.id = next_id
+                    next_id += 1
+
+    def renumber_resource_ids(self):
+        """Refactor all resource IDs to be sequential with no gaps"""
+        self._renumber_resource_ids(self.get_ext_resources(), ExtResource)
+        self._renumber_resource_ids(self.get_sub_resources(), SubResource)
+
+    def _renumber_resource_ids(
+        self,
+        sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
+        reference_type: Type[Union[ExtResource, SubResource]],
+    ) -> None:
+        id_map = {}
+        # First we renumber all the resource IDs so there are no gaps
+        for i, section in enumerate([s for s in sections if isinstance(s.id, int)]):
+            id_map[section.id] = i + 1
+            section.id = i + 1
+
+        # Now we update all references to use the new number
+        for ref in self._iter_resource_references():
+            if isinstance(ref, reference_type):
+                if ref.id in id_map:
+                    ref.id = id_map[ref.id]
+
+
+class GDResource(GDCommonFile):
+    def __init__(
+        self, type: Optional[str] = None, *sections: GDSection, **attributes
+    ) -> None:
+        super().__init__("gd_resource", *sections)
+
+        if type is not None:
+            self._sections[0].header["type"] = type
+
+        self.add_section(GDResourceSection(**attributes))
+
+    @property
+    def resource_section(self):
+        return self.find_section("resource")
+
+    def __contains__(self, k: str) -> bool:
+        return k in self.resource_section
+
+    def __getitem__(self, k: str) -> Any:
+        return self.resource_section[k]
+
+    def __setitem__(self, k: str, v: Any) -> None:
+        self.resource_section[k] = v
+
+    def __delitem__(self, k: str) -> None:
+        del self.resource_section[k]
+
+    def _iter_references(self) -> Iterator[Any]:
+        yield from super()._iter_references()
+        yield self.resource_section.properties
+
+
+class GDPackedScene(GDCommonFile):
+    def __init__(self, *sections: GDSection) -> None:
+        super().__init__("gd_scene", *sections)
+
+    def get_nodes(self) -> List[GDNodeSection]:
+        """Get all [node] sections"""
+        return cast(List[GDNodeSection], self.get_sections("node"))
+
+    def find_node(
+        self, property_constraints: Optional[dict] = None, **constraints
+    ) -> Optional[GDNodeSection]:
+        """Find first [node] section that matches (see find_section)"""
+        return cast(
+            GDNodeSection,
+            self.find_section("node", property_constraints, **constraints),
+        )
 
     def add_node(
         self,
@@ -245,7 +544,7 @@ class GDFile(object):
             return None
         return parent_res.path
 
-    def load_parent_scene(self) -> "GDScene":
+    def load_parent_scene(self) -> "GDPackedScene":
         if self.project_root is None:
             raise RuntimeError(
                 "load_parent_scene() requires a project_root on the GDFile"
@@ -256,9 +555,12 @@ class GDFile(object):
         parent_res = self.find_ext_resource(id=root.instance)
         if parent_res is None:
             raise RuntimeError(
-                "Could not find parent scene resource id(%d)" % root.instance
+                "Could not find parent scene resource id(%s)" % root.instance
             )
-        return GDScene.load(gdpath_to_filepath(self.project_root, parent_res.path))
+        return cast(
+            GDPackedScene,
+            GDPackedScene.load(gdpath_to_filepath(self.project_root, parent_res.path)),
+        )
 
     @contextmanager
     def use_tree(self):
@@ -300,160 +602,8 @@ class GDFile(object):
             node = tree.root.get_node(path)
         return node.section if node is not None else None
 
-    @classmethod
-    def parse(cls: Type[GDFileType], contents: str) -> GDFileType:
-        """Parse the contents of a Godot file"""
-        return cls.from_parser(
-            scene_file.parse_with_tabs().parse_string(contents, parse_all=True)
-        )
-
-    @classmethod
-    def load(cls: Type[GDFileType], filepath: str) -> GDFileType:
-        with open(filepath, "r", encoding="utf-8") as ifile:
-            try:
-                file = cls.parse(ifile.read())
-            except UnicodeDecodeError:
-                raise NotImplementedError(  # pylint: disable=W0707
-                    "Error loading %s: godot_parser does not support binary scenes"
-                    % filepath
-                )
-        file.project_root = find_project_root(filepath)
-        return file
-
-    @classmethod
-    def from_parser(cls: Type[GDFileType], parse_result):
-        first_section = parse_result[0]
-        if first_section.header.name == "gd_scene":
-            scene = GDScene.__new__(GDScene)
-            scene._sections = list(parse_result)
-            return scene
-        elif first_section.header.name == "gd_resource":
-            resource = GDResource.__new__(GDResource)
-            resource._sections = list(parse_result)
-            return resource
-        return cls(*parse_result)
-
-    def write(self, filename: str):
-        """Writes this to a file"""
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        with open(filename, "w", encoding="utf-8") as ofile:
-            ofile.write(str(self))
-
-    def __str__(self) -> str:
-        return "\n\n".join([str(s) for s in self._sections]) + "\n"
-
-    def __repr__(self) -> str:
-        return "%s(%s)" % (type(self).__name__, self.__str__())
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, GDFile):
-            return False
-        return self._sections == other._sections
-
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
-
-
-class GDCommonFile(GDFile):
-    """Base class with common application logic for all Godot file types"""
-
-    def __init__(self, name: str, *sections: GDSection) -> None:
-        super().__init__(
-            GDSection(GDSectionHeader(name, load_steps=1, format=2)), *sections
-        )
-        self.load_steps = (
-            1 + len(self.get_ext_resources()) + len(self.get_sub_resources())
-        )
-
-    @property
-    def load_steps(self) -> int:
-        return self._sections[0].header["load_steps"]
-
-    @load_steps.setter
-    def load_steps(self, steps: int):
-        self._sections[0].header["load_steps"] = steps
-
-    def add_section(self, new_section: GDSection) -> int:
-        idx = super().add_section(new_section)
-        if new_section.header.name in ["ext_resource", "sub_resource"]:
-            self.load_steps += 1
-        return idx
-
-    def remove_at(self, index: int):
-        section = self._sections.pop(index)
-        if section.header.name in ["ext_resource", "sub_resource"]:
-            self.load_steps -= 1
-
-    def remove_unused_resources(self):
-        self._remove_unused_resources(self.get_ext_resources(), ExtResource)
-        self._remove_unused_resources(self.get_sub_resources(), SubResource)
-
-    def _remove_unused_resources(
-        self,
-        sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
-        reference_type: Type[Union[ExtResource, SubResource]],
-    ) -> None:
-        seen = set()
-        for ref in self._iter_node_resource_references():
-            if isinstance(ref, reference_type):
-                seen.add(ref.id)
-        if len(seen) < len(sections):
-            to_remove = [s for s in sections if s.id not in seen]
-            for s in to_remove:
-                self.remove_section(s)
-
-    def renumber_resource_ids(self):
-        """Refactor all resource IDs to be sequential with no gaps"""
-        self._renumber_resource_ids(self.get_ext_resources(), ExtResource)
-        self._renumber_resource_ids(self.get_sub_resources(), SubResource)
-
-    def _iter_node_resource_references(
-        self,
-    ) -> Iterator[Union[ExtResource, SubResource]]:
-        def iter_resources(value):
-            if isinstance(value, (ExtResource, SubResource)):
-                yield value
-            elif isinstance(value, list):
-                for v in value:
-                    yield from iter_resources(v)
-            elif isinstance(value, dict):
-                for v in value.values():
-                    yield from iter_resources(v)
-            elif isinstance(value, GDObject):
-                for v in value.args:
-                    yield from iter_resources(v)
-
+    def _iter_references(self) -> Iterator[Any]:
+        yield from super()._iter_references()
         for node in self.get_nodes():
-            yield from iter_resources(node.header.attributes)
-            yield from iter_resources(node.properties)
-        for resource in self.get_sections("resource"):
-            yield from iter_resources(resource.properties)
-
-    def _renumber_resource_ids(
-        self,
-        sections: Sequence[Union[GDExtResourceSection, GDSubResourceSection]],
-        reference_type: Type[Union[ExtResource, SubResource]],
-    ) -> None:
-        id_map = {}
-        # First we renumber all the resource IDs so there are no gaps
-        for i, section in enumerate(sections):
-            id_map[section.id] = i + 1
-            section.id = i + 1
-
-        # Now we update all references to use the new number
-        for ref in self._iter_node_resource_references():
-            if isinstance(ref, reference_type):
-                try:
-                    ref.id = id_map[ref.id]
-                except KeyError as e:
-                    raise GodotFileException("Unknown resource ID %d" % ref.id) from e
-
-
-class GDScene(GDCommonFile):
-    def __init__(self, *sections: GDSection) -> None:
-        super().__init__("gd_scene", *sections)
-
-
-class GDResource(GDCommonFile):
-    def __init__(self, *sections: GDSection) -> None:
-        super().__init__("gd_resource", *sections)
+            yield node.header.attributes
+            yield node.properties

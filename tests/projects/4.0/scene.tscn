@@ -1,0 +1,41 @@
+[gd_scene load_steps=6 format=3 uid="uid://cqxcqnxlyn3vl"]
+
+[ext_resource type="Script" path="res://custom_node.gd" id="1"]
+[ext_resource type="Script" path="res://custom_resource.gd" id="2"]
+[ext_resource type="Resource" path="res://resource.tres" id="3"]
+
+[sub_resource type="Resource" id="Resource_pqy25"]
+script = ExtResource("2")
+test_string_name = &""
+test_string = ""
+test_vector3 = Vector3(0, 0, 0)
+test_enum = 0
+test_array_vector3 = Array[Vector3]([])
+test_dict = {}
+test_array_pool = PackedVector2Array()
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+test_string_name = &"stringName"
+test_string = "asd\\\\/\\'\"
+
+ç"
+test_vector3 = Vector3(9, 0, 0)
+test_enum = 1
+test_array_vector3 = Array[Vector3]([Vector3(0, 1, 0), Vector3(2, 0, 2)])
+test_dict = {
+1: "One",
+1.1: "One dot One",
+PackedInt32Array(2, 3): PackedByteArray(255, 1, 1)
+}
+test_array_pool = PackedVector2Array(50, 50, 20, 20)
+child_resource = SubResource("Resource_pqy25")
+
+[node name="CustomNode" type="Node"]
+script = ExtResource("1")
+godot_version = "4.0"
+internalResource = SubResource("1")
+externalResource = ExtResource("3")
+remoteNode = NodePath("ChildNode")
+
+[node name="ChildNode" type="Node" parent="."]

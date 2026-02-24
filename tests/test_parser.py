@@ -126,13 +126,13 @@ TEST_CASES = [
     ),
     (
         """[sub_resource type="CustomType" id=1]
-        string_value = "String"
-        string_name_value = &"StringName"
-        string_quote = "\\"String\\""
-        string_name_quote = &"\\"StringName\\""
-        string_single_quote = "\'String\'"
-        string_name_single_quote = &"\'StringName\'"
-        """,
+      string_value = "String"
+      string_name_value = &"StringName"
+      string_quote = "\\"String\\""
+      string_name_quote = &"\\"StringName\\""
+      string_single_quote = "\'String\'"
+      string_name_single_quote = &"\'StringName\'"
+      """,
         GDFile(
             GDSection(
                 GDSectionHeader("sub_resource", type="CustomType", id=1),
@@ -149,13 +149,13 @@ TEST_CASES = [
     ),
     (
         """[sub_resource type="CustomType" id=1]
-        typed_dict_1 = Dictionary[StringName, ExtResource("1_testt")]({
-        &"key": ExtResource("2_testt")
-        })
-        typed_dict_2 = Dictionary[ExtResource("1_testt"), StringName]({
-        ExtResource("2_testt"): &"key"
-        })
-        """,
+      typed_dict_1 = Dictionary[StringName, ExtResource("1_testt")]({
+      &"key": ExtResource("2_testt")
+      })
+      typed_dict_2 = Dictionary[ExtResource("1_testt"), StringName]({
+      ExtResource("2_testt"): &"key"
+      })
+      """,
         GDFile(
             GDSection(
                 GDSectionHeader("sub_resource", type="CustomType", id=1),
@@ -176,9 +176,9 @@ TEST_CASES = [
     ),
     (
         """[sub_resource type="CustomType" id=1]
-        typed_array_1 = Array[StringName]([&"a", &"b", &"c"])
-        typed_array_2 = Array[ExtResource("1_typee")]([ExtResource("1_qwert"), ExtResource("2_testt")])
-        """,
+      typed_array_1 = Array[StringName]([&"a", &"b", &"c"])
+      typed_array_2 = Array[ExtResource("1_typee")]([ExtResource("1_qwert"), ExtResource("2_testt")])
+      """,
         GDFile(
             GDSection(
                 GDSectionHeader("sub_resource", type="CustomType", id=1),
@@ -204,8 +204,8 @@ TEST_CASES = [
     ),
     (
         """[node name="Label" type="Label" parent="." unique_id=1387035530]
-        text = "\ta\\\"q\\'é'd\\\"\n\n\\\\"
-        """,
+      text = "\ta\\\"q\\'é'd\\\"\n\n\\\\"
+      """,
         GDFile(
             GDSection(
                 GDSectionHeader(
@@ -247,4 +247,5 @@ class TestParser(unittest.TestCase):
     def test_cases(self):
         """Run the parsing test cases"""
         for string, expected in TEST_CASES:
-            self._run_test(string, expected)
+            with self.subTest(string):
+                self._run_test(string, expected)
