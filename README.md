@@ -1,9 +1,5 @@
 # Godot Parser
 
-[![Build Status](https://github.com/stevearc/godot_parser/actions/workflows/tests.yml/badge.svg)](https://github.com/stevearc/godot_parser/actions)
-[![Coverage Status](https://coveralls.io/repos/github/stevearc/godot_parser/badge.svg?branch=master)](https://coveralls.io/github/stevearc/godot_parser?branch=master)
-[![Downloads](http://pepy.tech/badge/godot_parser)](https://pypi.org/pypi/godot_parser)
-
 This is a python library for parsing Godot scene (.tscn) and resource (.tres)
 files. It's intended to make it easier to automate certain aspects of editing
 scene files or resources in Godot.
@@ -104,14 +100,6 @@ Find all scenes in your project with a "Sensor" node and change the
 
   main(sys.argv[1])
 ```
-
-## Caveats
-This was written with the help of the [Godot TSCN
-docs](https://godot-es-docs.readthedocs.io/en/latest/development/file_formats/tscn.html),
-but it's still mostly based on visual inspection of the Godot files I'm working
-on. If you find a situation godot_parser doesn't handle or a feature it doesn't
-support, file an issue with the scene file and an explanation of the desired
-behavior. If you want to dig in and submit a pull request, so much the better!
 
 If you want to run a quick sanity check for this tool, you can use the
 `test_parse_files.py` script. Pass in your root Godot directory and it will
