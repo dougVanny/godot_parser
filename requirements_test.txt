@@ -1,5 +1,0 @@
-coverage
-black
-isort
-mypy
-pylint==3.3.5

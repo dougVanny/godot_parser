@@ -1,5 +1,4 @@
 wheel
--r requirements_test.txt
 tox
 twine
 bumpversion
