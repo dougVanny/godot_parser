@@ -6,8 +6,8 @@ import os
 import sys
 import traceback
 
-from godot_parser import parse
-from godot_parser.output import VersionOutputFormat
+from .files import GDFile
+from .output import VersionOutputFormat
 
 
 def _parse_and_test_file(filename: str, verbose: bool) -> bool:
@@ -16,7 +16,7 @@ def _parse_and_test_file(filename: str, verbose: bool) -> bool:
     with open(filename, "r", encoding="utf-8") as ifile:
         original_file = ifile.read()
     try:
-        parsed_file = parse(original_file)
+        parsed_file = GDFile.parse(original_file)
         output_format = VersionOutputFormat.guess_version(parsed_file)
         output_file = parsed_file.output_to_string(output_format)
     except Exception:

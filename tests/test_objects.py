@@ -1,18 +1,20 @@
 import unittest
 
-from godot_parser import (
+from godot_parser.objects import (
     Color,
     ExtResource,
     GDObject,
     NodePath,
+    PackedByteArray,
+    PackedVector4Array,
     StringName,
     SubResource,
     TypedArray,
     TypedDictionary,
     Vector2,
     Vector3,
+    Vector4,
 )
-from godot_parser.objects import PackedByteArray, PackedVector4Array, Vector4
 
 
 class TestGDObjects(unittest.TestCase):

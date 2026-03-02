@@ -3,17 +3,15 @@ import unittest
 
 from pyparsing import ParseException
 
-from godot_parser import (
-    GDFile,
+from godot_parser.files import GDFile
+from godot_parser.objects import (
     GDObject,
-    GDSection,
-    GDSectionHeader,
     StringName,
     TypedArray,
     TypedDictionary,
     Vector2,
-    parse,
 )
+from godot_parser.sections import GDSection, GDSectionHeader
 
 HERE = os.path.dirname(__file__)
 
@@ -224,7 +222,7 @@ class TestParser(unittest.TestCase):
     def _run_test(self, string: str, expected):
         """Run a set of tests"""
         try:
-            parse_result = parse(string)
+            parse_result = GDFile.parse(string)
             if expected == "error":
                 assert False, "Parsing '%s' should have failed.\nGot: %s" % (
                     string,

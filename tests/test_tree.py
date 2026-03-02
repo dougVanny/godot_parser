@@ -3,7 +3,8 @@ import shutil
 import tempfile
 import unittest
 
-from godot_parser import GDPackedScene, Node, SubResource, TreeMutationException
+from godot_parser.objects import SubResource
+from godot_parser.tree import GDPackedScene, Node, TreeMutationException
 from godot_parser.util import find_project_root, gdpath_to_filepath
 
 

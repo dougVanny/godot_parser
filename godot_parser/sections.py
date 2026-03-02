@@ -6,18 +6,6 @@ from .objects import ExtResource, StringName, SubResource
 from .output import Outputable, OutputFormat
 from .util import Identifiable, stringify_object
 
-__all__ = [
-    "GDSectionHeader",
-    "GDSection",
-    "GDNodeSection",
-    "GDBaseResourceSection",
-    "GDExtResourceSection",
-    "GDSubResourceSection",
-    "GDResourceSection",
-    "GDFileHeader",
-]
-
-
 GD_SECTION_REGISTRY = {}
 
 

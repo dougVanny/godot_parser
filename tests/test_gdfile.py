@@ -1,19 +1,17 @@
 import tempfile
 import unittest
 
-from godot_parser import (
+from godot_parser.files import (
     GDFile,
     GDObject,
     GDPackedScene,
     GDResource,
     GDResourceSection,
-    Node,
-    StringName,
-    TypedArray,
-    TypedDictionary,
 )
 from godot_parser.id_generator import SequentialHexGenerator
+from godot_parser.objects import StringName, TypedArray, TypedDictionary
 from godot_parser.output import OutputFormat
+from godot_parser.tree import Node
 
 
 class TestGDFile(unittest.TestCase):

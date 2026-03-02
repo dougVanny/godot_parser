@@ -6,8 +6,6 @@ from typing import Any, List, Optional, Union
 from .files import GDPackedScene
 from .sections import GDNodeSection
 
-__all__ = ["Node", "TreeMutationException"]
-
 
 class TreeMutationException(Exception):
     """Raised when attempting to mutate the tree in an unsupported way"""

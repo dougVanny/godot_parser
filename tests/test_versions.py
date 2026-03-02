@@ -3,11 +3,14 @@ import os
 import unittest
 
 import tests
-from godot_parser import GDPackedScene, NodePath, StringName, TypedArray, parse
+from godot_parser.files import GDFile, GDPackedScene
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.objects import (
+    NodePath,
     PackedByteArray,
     PackedVector4Array,
+    StringName,
+    TypedArray,
     TypedDictionary,
     Vector4,
 )
@@ -266,7 +269,7 @@ class TestRealProject(unittest.TestCase):
 
                     with open(filepath, "r", encoding="utf-8") as input_file:
                         file_content = input_file.read()
-                        parsed_file = parse(file_content)
+                        parsed_file = GDFile.parse(file_content)
                         self.assertEqual(
                             file_content,
                             parsed_file.output_to_string(output_format),

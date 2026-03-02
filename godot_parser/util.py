@@ -3,7 +3,7 @@
 import os
 from typing import Optional, Union
 
-from godot_parser.output import Outputable, OutputFormat
+from .output import Outputable, OutputFormat
 
 
 def stringify_object(value, output_format: OutputFormat = OutputFormat()):

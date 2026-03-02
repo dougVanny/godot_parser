@@ -1,23 +1,20 @@
 import base64
 import unittest
 
-from godot_parser import (
-    GDExtResourceSection,
-    GDObject,
-    GDResource,
-    GDSubResourceSection,
-    StringName,
-    TypedArray,
-    Vector3,
-)
+from godot_parser.files import GDResource
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.objects import (
+    GDObject,
     PackedByteArray,
     PackedVector4Array,
+    StringName,
+    TypedArray,
     TypedDictionary,
+    Vector3,
     Vector4,
 )
 from godot_parser.output import OutputFormat, VersionOutputFormat
+from godot_parser.sections import GDExtResourceSection, GDSubResourceSection
 
 
 class TestOutputFormat(unittest.TestCase):

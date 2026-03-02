@@ -10,23 +10,6 @@ from typing import Any, Iterable, List, Optional, Type, TypeVar, Union
 from .output import Outputable, OutputFormat
 from .util import Identifiable, stringify_object
 
-__all__ = [
-    "GDObject",
-    "Vector2",
-    "Vector3",
-    "Color",
-    "NodePath",
-    "ResourceReference",
-    "ExtResource",
-    "SubResource",
-    "StringName",
-    "TypedArray",
-    "TypedDictionary",
-    "PackedByteArray",
-    "PackedVector4Array",
-    "GDIterable",
-]
-
 GD_OBJECT_REGISTRY = {}
 
 
