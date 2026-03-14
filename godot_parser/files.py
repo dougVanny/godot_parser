@@ -195,7 +195,7 @@ class GDFile(Outputable):
     def from_parser(cls: Type["GDFile"], parse_result) -> "GDFile":
         first_section = parse_result[0]
         if first_section.header.name == "gd_scene":
-            scene = GDPackedScene.__new__(GDPackedScene)
+            scene = GDScene.__new__(GDScene)
             scene._sections = list(parse_result)
             return scene
         elif first_section.header.name == "gd_resource":
@@ -468,7 +468,7 @@ class GDResource(GDCommonFile):
         yield self.resource_section.properties
 
 
-class GDPackedScene(GDCommonFile):
+class GDScene(GDCommonFile):
     def __init__(self, *sections: GDSection) -> None:
         super().__init__("gd_scene", *sections)
 
@@ -542,7 +542,7 @@ class GDPackedScene(GDCommonFile):
             return None
         return parent_res.path
 
-    def load_parent_scene(self) -> "GDPackedScene":
+    def load_parent_scene(self) -> "GDScene":
         if self.project_root is None:
             raise RuntimeError(
                 "load_parent_scene() requires a project_root on the GDFile"
@@ -556,8 +556,8 @@ class GDPackedScene(GDCommonFile):
                 "Could not find parent scene resource id(%s)" % root.instance
             )
         return cast(
-            GDPackedScene,
-            GDPackedScene.load(gdpath_to_filepath(self.project_root, parent_res.path)),
+            GDScene,
+            GDScene.load(gdpath_to_filepath(self.project_root, parent_res.path)),
         )
 
     @contextmanager

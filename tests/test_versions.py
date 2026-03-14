@@ -3,7 +3,7 @@ import os
 import unittest
 
 import tests
-from godot_parser.files import GDFile, GDPackedScene
+from godot_parser.files import GDFile, GDScene
 from godot_parser.id_generator import SequentialHexGenerator
 from godot_parser.objects import (
     NodePath,
@@ -19,7 +19,7 @@ from godot_parser.output import VersionOutputFormat
 
 class TestVersionOutput(unittest.TestCase):
     def setUp(self):
-        self.scene = GDPackedScene()
+        self.scene = GDScene()
         root = self.scene.add_node("Root", "Node3D")
         child = self.scene.add_node("Child", "Node", ".")
 

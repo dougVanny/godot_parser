@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from godot_parser.objects import SubResource
-from godot_parser.tree import GDPackedScene, Node, TreeMutationException
+from godot_parser.tree import GDScene, Node, TreeMutationException
 from godot_parser.util import find_project_root, gdpath_to_filepath
 
 
@@ -13,7 +13,7 @@ class TestTree(unittest.TestCase):
 
     def test_get_node(self):
         """Test for get_node()"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_node("RootNode")
         scene.add_node("Child", parent=".")
         child = scene.add_node("Child2", parent="Child")
@@ -22,7 +22,7 @@ class TestTree(unittest.TestCase):
 
     def test_remove_node(self):
         """Test for remove_node()"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_node("RootNode")
         scene.add_node("Child", parent=".")
         node = scene.find_section("node", name="Child")
@@ -59,7 +59,7 @@ class TestTree(unittest.TestCase):
 
     def test_insert_child(self):
         """Test for insert_child()"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_node("RootNode")
         scene.add_node("Child1", parent=".")
         with scene.use_tree() as tree:
@@ -73,21 +73,21 @@ class TestTree(unittest.TestCase):
 
     def test_empty_scene(self):
         """Empty scenes should not crash"""
-        scene = GDPackedScene()
+        scene = GDScene()
         with scene.use_tree() as tree:
             n = tree.get_node("Any")
             self.assertIsNone(n)
 
     def test_get_missing_node(self):
         """get_node on missing node should return None"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_node("RootNode")
         node = scene.get_node("Foo/Bar/Baz")
         self.assertIsNone(node)
 
     def test_properties(self):
         """Test for changing properties on a node"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_node("RootNode")
         with scene.use_tree() as tree:
             tree.root["vframes"] = 10
@@ -124,7 +124,7 @@ class TestInheritedScenes(unittest.TestCase):
         cls.root_scene = os.path.join(cls.project_dir, "Root.tscn")
         cls.mid_scene = os.path.join(cls.project_dir, "Mid.tscn")
         cls.leaf_scene = os.path.join(cls.project_dir, "Leaf.tscn")
-        scene = GDPackedScene.parse("""
+        scene = GDScene.parse("""
 [gd_scene load_steps=1 format=2]
 [node name="Root" type="KinematicBody2D"]
 collision_layer = 3
@@ -137,7 +137,7 @@ flip_h = false
 """)
         scene.write(cls.root_scene)
 
-        scene = GDPackedScene.parse("""
+        scene = GDScene.parse("""
 [gd_scene load_steps=2 format=2]
 [ext_resource path="res://Root.tscn" type="PackedScene" id=1]
 [node name="Mid" instance=ExtResource( 1 )]
@@ -147,7 +147,7 @@ pause_mode = 2
 """)
         scene.write(cls.mid_scene)
 
-        scene = GDPackedScene.parse("""
+        scene = GDScene.parse("""
 [gd_scene load_steps=2 format=2]
 [ext_resource path="res://Mid.tscn" type="PackedScene" id=1]
 [sub_resource type="CircleShape2D" id=1]
@@ -166,7 +166,7 @@ flip_h = true
 
     def test_load_inherited(self):
         """Can load an inherited scene and read the nodes"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
         with scene.use_tree() as tree:
             node = tree.get_node("Health/LifeBar")
             self.assertIsNotNone(node)
@@ -174,7 +174,7 @@ flip_h = true
 
     def test_add_new_nodes(self):
         """Can add new nodes to an inherited scene"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
         with scene.use_tree() as tree:
             tree.get_node("Health/LifeBar")
             node = Node("NewChild", type="Control")
@@ -191,7 +191,7 @@ flip_h = true
 
     def test_cannot_remove(self):
         """Cannot remove inherited nodes"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
         with scene.use_tree() as tree:
             node = tree.get_node("Health")
             self.assertRaises(TreeMutationException, node.remove_from_parent)
@@ -202,7 +202,7 @@ flip_h = true
 
     def test_cannot_mutate(self):
         """Cannot change the name/type/instance of inherited nodes"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
 
         def change_name(x):
             x.name = "foo"
@@ -221,7 +221,7 @@ flip_h = true
 
     def test_inherit_properties(self):
         """Inherited nodes inherit properties"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
         with scene.use_tree() as tree:
             self.assertEqual(tree.root["shape"], SubResource(1))
             self.assertEqual(tree.root["collision_layer"], 4)
@@ -231,7 +231,7 @@ flip_h = true
 
     def test_unchanged_sections(self):
         """Inherited nodes do not appear in sections"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
         num_nodes = len(scene.get_nodes())
         self.assertEqual(num_nodes, 2)
         with scene.use_tree() as tree:
@@ -243,7 +243,7 @@ flip_h = true
 
     def test_overwrite_sections(self):
         """Inherited nodes appear in sections if we change their configuration"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
         with scene.use_tree() as tree:
             node = tree.get_node("Health/LifeBar")
             node["pause_mode"] = 2
@@ -254,7 +254,7 @@ flip_h = true
 
     def test_disappear_sections(self):
         """Inherited nodes are removed from sections if we change their configuration to match parent"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
         with scene.use_tree() as tree:
             sprite = tree.get_node("Sprite")
             sprite["flip_h"] = False
@@ -272,20 +272,20 @@ flip_h = true
 
     def test_invalid_tree(self):
         """Raise exception when tree is invalid"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_node("RootNode")
         scene.add_node("Child", parent="Missing")
         self.assertRaises(TreeMutationException, lambda: scene.get_node("Child"))
 
     def test_missing_root(self):
         """Raise exception when GDScene is inherited but missing project_root"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_ext_node("Root", 1)
         self.assertRaises(RuntimeError, lambda: scene.get_node("Root"))
 
     def test_missing_ext_resource(self):
         """Raise exception when GDScene is inherited but ext_resource is missing"""
-        scene = GDPackedScene.load(self.leaf_scene)
+        scene = GDScene.load(self.leaf_scene)
         for section in scene.get_ext_resources():
             scene.remove_section(section)
         self.assertRaises(RuntimeError, lambda: scene.get_node("Root"))

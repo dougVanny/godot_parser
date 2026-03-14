@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from typing import Any, List, Optional, Union
 
-from .files import GDPackedScene
+from .files import GDScene
 from .sections import GDNodeSection
 
 
@@ -294,7 +294,7 @@ class Tree(object):
         return self.root.get_node(path)
 
     @classmethod
-    def build(cls, file: GDPackedScene):
+    def build(cls, file: GDScene):
         """Build the Tree from a flat list of [node]'s"""
         tree = cls()
         # Makes assumptions that the nodes are well-ordered
@@ -326,7 +326,7 @@ class Tree(object):
         return ret
 
 
-def _load_parent_scene(root: Node, file: GDPackedScene):
+def _load_parent_scene(root: Node, file: GDScene):
     parent_file = file.load_parent_scene()
     parent_tree = Tree.build(parent_file)
     # Transfer parent scene's children to this scene

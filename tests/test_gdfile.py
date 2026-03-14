@@ -4,7 +4,7 @@ import unittest
 from godot_parser.files import (
     GDFile,
     GDObject,
-    GDPackedScene,
+    GDScene,
     GDResource,
     GDResourceSection,
 )
@@ -23,7 +23,7 @@ class TestGDFile(unittest.TestCase):
 
     def test_basic_scene(self):
         """Run the parsing test cases"""
-        self.assertEqual(str(GDPackedScene()), "[gd_scene format=3]\n")
+        self.assertEqual(str(GDScene()), "[gd_scene format=3]\n")
 
     def test_all_data_types(self):
         """Run the parsing test cases"""
@@ -49,7 +49,7 @@ escaped = "foo(\\"bar\\")"
 
     def test_ext_resource(self):
         """Test serializing a scene with an ext_resource"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_ext_resource("res://Other.tscn", "PackedScene")
         self.assertEqual(
             scene.output_to_string(self.test_output_format),
@@ -61,7 +61,7 @@ escaped = "foo(\\"bar\\")"
 
     def test_sub_resource(self):
         """Test serializing a scene with an sub_resource"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_sub_resource("Animation")
         self.assertEqual(
             scene.output_to_string(self.test_output_format),
@@ -73,7 +73,7 @@ escaped = "foo(\\"bar\\")"
 
     def test_node(self):
         """Test serializing a scene with a node"""
-        scene = GDPackedScene()
+        scene = GDScene()
         scene.add_node("RootNode", type="Node2D")
         scene.add_node("Child", type="Area2D", parent=".")
         self.assertEqual(
@@ -88,7 +88,7 @@ escaped = "foo(\\"bar\\")"
 
     def test_tree_create(self):
         """Test creating a scene with the tree API"""
-        scene = GDPackedScene()
+        scene = GDScene()
         with scene.use_tree() as tree:
             tree.root = Node("RootNode", type="Node2D")
             tree.root.add_child(
@@ -107,7 +107,7 @@ visible = false
 
     def test_tree_deep_create(self):
         """Test creating a scene with nested children using the tree API"""
-        scene = GDPackedScene()
+        scene = GDScene()
         with scene.use_tree() as tree:
             tree.root = Node("RootNode", type="Node2D")
             child = Node("Child", type="Node")
@@ -141,7 +141,7 @@ visible = false
 
     def test_section_ordering(self):
         """Sections maintain an ordering"""
-        scene = GDPackedScene()
+        scene = GDScene()
         node = scene.add_node("RootNode")
         scene.add_ext_resource("res://Other.tscn", "PackedScene")
         res = scene.find_section("ext_resource")
@@ -149,7 +149,7 @@ visible = false
 
     def test_add_ext_node(self):
         """Test GDScene.add_ext_node"""
-        scene = GDPackedScene()
+        scene = GDScene()
         res = scene.add_ext_resource("res://Other.tscn", "PackedScene")
         scene.generate_resource_ids()
         node = scene.add_ext_node("Root", res.id)
@@ -159,22 +159,22 @@ visible = false
 
     def test_write(self):
         """Test writing scene out to a file"""
-        scene = GDPackedScene()
+        scene = GDScene()
         outfile = tempfile.mkstemp()[1]
         scene.write(outfile)
         with open(outfile, "r", encoding="utf-8") as ifile:
-            gen_scene = GDPackedScene.parse(ifile.read())
+            gen_scene = GDScene.parse(ifile.read())
         self.assertEqual(scene, gen_scene)
 
     def test_get_node_none(self):
         """get_node() works with no nodes"""
-        scene = GDPackedScene()
+        scene = GDScene()
         n = scene.get_node()
         self.assertIsNone(n)
 
     def test_addremove_ext_res(self):
         """Test adding and removing an ext_resource"""
-        scene = GDPackedScene()
+        scene = GDScene()
         res = scene.add_ext_resource("res://Res.tscn", "PackedScene")
         res2 = scene.add_ext_resource("res://Sprite.png", "Texture")
         scene.generate_resource_ids(self.test_output_format)
@@ -198,7 +198,7 @@ visible = false
 
     def test_remove_unused_resource(self):
         """Can remove unused resources"""
-        scene = GDPackedScene()
+        scene = GDScene()
         res = scene.add_ext_resource("res://Res.tscn", "PackedScene")
         scene.remove_unused_resources()
         resources = scene.get_sections("ext_resource")
@@ -278,7 +278,7 @@ visible = false
 
     def test_find_constraints(self):
         """Test for the find_section constraints"""
-        scene = GDPackedScene()
+        scene = GDScene()
         res1 = scene.add_sub_resource("CircleShape2D", radius=1)
         res2 = scene.add_sub_resource("CircleShape2D", radius=2)
         scene.generate_resource_ids()
@@ -294,7 +294,7 @@ visible = false
 
     def test_find_node(self):
         """Test GDScene.find_node"""
-        scene = GDPackedScene()
+        scene = GDScene()
         n1 = scene.add_node("Root", "Node")
         n2 = scene.add_node("Child", "Node", parent=".")
         node = scene.find_node(name="Root")
@@ -304,8 +304,8 @@ visible = false
 
     def test_file_equality(self):
         """Tests for GDFile == GDFile"""
-        s1 = GDPackedScene(GDResourceSection())
-        s2 = GDPackedScene(GDResourceSection())
+        s1 = GDScene(GDResourceSection())
+        s2 = GDScene(GDResourceSection())
         self.assertEqual(s1, s2)
         resource = s1.find_section("resource")
         resource["key"] = "value"
