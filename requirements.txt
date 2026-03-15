@@ -4,3 +4,4 @@ twine
 bumpversion
 build
 packaging
+pyparsing
