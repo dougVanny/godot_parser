@@ -261,41 +261,44 @@ class GDCommonFile(GDFile):
     def _output_to_string(self, output_format: OutputFormat) -> str:
         self.generate_resource_ids(output_format)
 
-        header = self._sections[0].header
-        if "load_steps" in header:
-            del header["load_steps"]
-        if "format" in header:
-            del header["format"]
+        if "load_steps" in self.header:
+            del self.header["load_steps"]
+        if "format" in self.header:
+            del self.header["format"]
 
         if output_format.load_steps:
-            header["load_steps"] = (
+            self.header["load_steps"] = (
                 1 + len(self.get_ext_resources()) + len(self.get_sub_resources())
             )
 
         if output_format.resource_ids_as_strings:
-            header["format"] = 3
+            self.header["format"] = 3
             for obj in self._iter_resource_references():
                 if (
                     isinstance(obj, PackedVector4Array)
                     and output_format.packed_vector4_array_support
                 ):
-                    header["format"] = 4
+                    self.header["format"] = 4
                 if (
                     isinstance(obj, PackedByteArray)
                     and output_format.packed_byte_array_base64_support
                 ):
-                    header["format"] = 4
+                    self.header["format"] = 4
             if output_format._force_format_4_if_available and (
                 output_format.packed_byte_array_base64_support
                 or output_format.packed_vector4_array_support
             ):
-                header["format"] = 4
+                self.header["format"] = 4
         else:
-            header["format"] = 2
+            self.header["format"] = 2
 
         ret = super()._output_to_string(output_format)
 
         return ret
+
+    @property
+    def header(self):
+        return self._sections[0].header
 
     def add_section(self, new_section: GDSection) -> int:
         idx = super().add_section(new_section)
@@ -443,7 +446,7 @@ class GDResource(GDCommonFile):
         super().__init__("gd_resource", *sections)
 
         if type is not None:
-            self._sections[0].header["type"] = type
+            self.header["type"] = type
 
         self.add_section(GDResourceSection(**attributes))
 
